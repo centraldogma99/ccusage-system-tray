@@ -3,42 +3,9 @@ const { getBunEnvironment, getCcusageCommand } = require('./utils');
 
 let usageData = null;
 
-const processDailyData = (dailyData) => {
-  if (dailyData && dailyData.daily && dailyData.daily.length > 0) {
-    const today = dailyData.daily.find(d => {
-      const date = new Date(d.date);
-      const todayDate = new Date();
-      return date.toDateString() === todayDate.toDateString();
-    });
-    
-    if (today) {
-      document.getElementById('daily-tokens').textContent = 
-        `${(today.totalTokens / 1000).toFixed(1)}k`;
-      document.getElementById('daily-cost').textContent = 
-        `$${today.totalCost.toFixed(2)}`;
-    } else {
-      const latestDay = dailyData.daily[0];
-      document.getElementById('daily-tokens').textContent = 
-        `${(latestDay.totalTokens / 1000).toFixed(1)}k`;
-      document.getElementById('daily-cost').textContent = 
-        `$${latestDay.totalCost.toFixed(2)}`;
-    }
-  }
-};
 
 const updateDisplay = (data) => {
-  if (!data || !data.sessions || !data.sessions.sessions || data.sessions.sessions.length === 0) return;
-  
-  const latestSession = data.sessions.sessions[0];
-  
-  document.getElementById('session-tokens').textContent = 
-    `${(latestSession.totalTokens / 1000).toFixed(1)}k`;
-  
-  document.getElementById('session-cost').textContent = 
-    `$${latestSession.totalCost.toFixed(2)}`;
-  
-  const progress = Math.min((latestSession.totalTokens / 100000) * 100, 100);
-  document.getElementById('session-progress').style.width = `${progress}%`;
+  if (!data) return;
   
   if (data.blocks && data.blocks.blocks) {
     const currentBlock = data.blocks.blocks.find(block => block.isActive);
@@ -60,44 +27,24 @@ const updateDisplay = (data) => {
     }
   }
   
-  const modelsContainer = document.getElementById('models-list');
-  modelsContainer.innerHTML = '';
-  
-  if (latestSession.modelBreakdowns) {
-    latestSession.modelBreakdowns.forEach(model => {
-      const modelDiv = document.createElement('div');
-      modelDiv.className = 'model-info';
-      const modelName = model.modelName.replace('claude-', '').replace('-20250514', '');
-      modelDiv.innerHTML = `
-        <span>${modelName}</span>
-        <span>${((model.inputTokens + model.outputTokens) / 1000).toFixed(1)}k tokens</span>
-      `;
-      modelsContainer.appendChild(modelDiv);
+  if (data.daily && data.daily.daily && data.daily.daily.length > 0) {
+    const today = data.daily.daily.find(d => {
+      const date = new Date(d.date);
+      const todayDate = new Date();
+      return date.toDateString() === todayDate.toDateString();
     });
+    
+    const dayData = today || data.daily.daily[0];
+    document.getElementById('daily-tokens').textContent = 
+      `${(dayData.totalTokens / 1000).toFixed(1)}k`;
+    document.getElementById('daily-cost').textContent = 
+      `$${dayData.totalCost.toFixed(2)}`;
   }
   
   document.getElementById('last-update').textContent = 
     `Last updated: ${new Date().toLocaleTimeString()}`;
 };
 
-const fetchDailyUsage = () => {
-  const { exec } = require('child_process');
-  
-  // 공통 유틸리티 함수 사용
-  const env = getBunEnvironment();
-  const command = getCcusageCommand('daily --json');
-  
-  exec(command, { env }, (error, stdout, stderr) => {
-      if (!error && stdout) {
-        try {
-          const dailyData = JSON.parse(stdout);
-          processDailyData(dailyData);
-        } catch (e) {
-          console.error('Error parsing daily data:', e);
-        }
-      }
-  });
-};
 
 ipcRenderer.on('usage-update', (event, data) => {
   if (data.error) {
@@ -116,8 +63,3 @@ ipcRenderer.on('usage-update', (event, data) => {
   updateDisplay(data);
 });
 
-document.addEventListener('DOMContentLoaded', () => {
-  fetchDailyUsage();
-  
-  setInterval(fetchDailyUsage, 60000 * 5);
-});

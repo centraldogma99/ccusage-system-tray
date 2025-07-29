@@ -111,8 +111,9 @@ const updateUsageData = () => {
   console.log('Using PATH with bun:', env.PATH);
   
   Promise.all([
-    executeCcusageCommand('blocks --json', env)
-  ]).then(([blockData]) => {
+    executeCcusageCommand('blocks --json', env),
+    executeCcusageCommand('daily --json', env)
+  ]).then(([blockData, dailyData]) => {
     const currentBlock = blockData.blocks.find(block => block.isActive);
     const maxTokens = Math.max(...blockData.blocks.map(b => b.totalTokens));
     const blockUsagePercent = currentBlock ? 
@@ -124,9 +125,9 @@ const updateUsageData = () => {
       
     if (window) {
       window.webContents.send('usage-update', { 
-        sessions: sessionData, 
         blocks: blockData,
-        blockUsagePercent: blockUsagePercent 
+        blockUsagePercent: blockUsagePercent,
+        daily: dailyData 
       });
     }
   }).catch(error => {
