@@ -1,4 +1,5 @@
 const { ipcRenderer } = require('electron');
+const { getBunEnvironment, getCcusageCommand } = require('./utils');
 
 let usageData = null;
 
@@ -81,22 +82,12 @@ const updateDisplay = (data) => {
 
 const fetchDailyUsage = () => {
   const { exec } = require('child_process');
-  const path = require('path');
   
-  // Find npm global path and set up environment
-  exec('npm root -g', (error, stdout) => {
-    let env = { ...process.env };
-    
-    if (!error && stdout) {
-      const globalPath = stdout.trim();
-      const binPath = path.join(globalPath, '..', '.bin');
-      
-      // Add npm global bin to PATH
-      env.PATH = `${binPath}${path.delimiter}${env.PATH}`;
-    }
-    
-    // Execute ccusage command with updated PATH
-    exec('ccusage daily --json', { env }, (error, stdout, stderr) => {
+  // 공통 유틸리티 함수 사용
+  const env = getBunEnvironment();
+  const command = getCcusageCommand('daily --json');
+  
+  exec(command, { env }, (error, stdout, stderr) => {
       if (!error && stdout) {
         try {
           const dailyData = JSON.parse(stdout);
@@ -105,7 +96,6 @@ const fetchDailyUsage = () => {
           console.error('Error parsing daily data:', e);
         }
       }
-    });
   });
 };
 

@@ -1,9 +1,37 @@
 const { app, BrowserWindow, Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
 const { exec } = require('child_process');
+const { getBunEnvironment, getCcusageCommand } = require('./utils');
 
 let tray = null;
 let window = null;
+
+/**
+ * ccusage 명령을 실행하고 결과를 파싱하여 반환합니다.
+ * @param {string} subCommand - ccusage 하위 명령어 (예: 'session --json --limit 1')
+ * @param {Object} env - 환경변수 객체
+ * @returns {Promise<Object>} 파싱된 JSON 결과
+ */
+const executeCcusageCommand = (subCommand, env) => {
+  return new Promise((resolve, reject) => {
+    const command = getCcusageCommand(subCommand);
+    console.log(`Executing: ${command}`);
+    
+    exec(command, { env }, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`ccusage ${subCommand.split(' ')[0]} error:`, error.message);
+        console.error('stderr:', stderr);
+        reject(new Error(`ccusage ${subCommand.split(' ')[0]} failed: ${error.message}`));
+      } else {
+        try {
+          resolve(JSON.parse(stdout));
+        } catch (e) {
+          reject(new Error(`Failed to parse ${subCommand.split(' ')[0]} data: ${e.message}`));
+        }
+      }
+    });
+  });
+};
 
 const createTray = () => {
   // 16x16 크기의 기본 트레이 아이콘 생성
@@ -79,96 +107,27 @@ const updateTrayTitle = (text) => {
 };
 
 const updateUsageData = () => {
-  // Get home directory and add common node paths
-  const os = require('os');
-  const homeDir = os.homedir();
+  const env = getBunEnvironment();
+  console.log('Using PATH with bun:', env.PATH);
   
-  // Add home directory node paths to PATH
-  const nodePath = `${homeDir}/.nvm/versions/node/v20.18.3/bin`;
-  const env = {
-    ...process.env,
-    PATH: `${nodePath}:${process.env.PATH || '/usr/bin:/bin'}`
-  };
-  
-  console.log('Using PATH:', env.PATH);
-  
-  // Try to find ccusage using which
-  exec('which ccusage', { env }, (error, stdout, stderr) => {
-    if (error) {
-      console.error('which ccusage failed:', error.message);
-      console.error('stderr:', stderr);
-      
-      if (window) {
-        window.webContents.send('usage-update', { 
-          error: `ccusage를 찾을 수 없습니다.\n\n설치 확인:\n1. Terminal을 열고 다음 명령어를 실행하세요:\n   which ccusage\n\n2. 결과가 없다면 ccusage를 설치하세요:\n   npm install -g ccusage\n\n3. 설치 후 앱을 재시작하세요.`
-        });
-      }
-      updateTrayTitle('Error');
-      return;
-    }
-    
-    const ccusageCmd = stdout.trim();
-    console.log('Found ccusage at:', ccusageCmd);
-    
-    // Now execute ccusage commands with updated PATH
-    Promise.all([
-      new Promise((resolve, reject) => {
-        console.log(`Executing: ${ccusageCmd} session --json --limit 1`);
-        exec(`${ccusageCmd} session --json --limit 1`, { env }, (error, stdout, stderr) => {
-          if (error) {
-            console.error('ccusage session error:', error.message);
-            console.error('stderr:', stderr);
-            reject(new Error(`ccusage session failed: ${error.message}`));
-          } else {
-            try {
-              resolve(JSON.parse(stdout));
-            } catch (e) {
-              reject(new Error(`Failed to parse session data: ${e.message}`));
-            }
-          }
-        });
-      }),
-      new Promise((resolve, reject) => {
-        console.log(`Executing: ${ccusageCmd} blocks --json`);
-        exec(`${ccusageCmd} blocks --json`, { env }, (error, stdout, stderr) => {
-          if (error) {
-            console.error('ccusage blocks error:', error.message);
-            console.error('stderr:', stderr);
-            reject(new Error(`ccusage blocks failed: ${error.message}`));
-          } else {
-            try {
-              resolve(JSON.parse(stdout));
-            } catch (e) {
-              reject(new Error(`Failed to parse blocks data: ${e.message}`));
-            }
-          }
-        });
-      })
-    ]).then(([sessionData, blockData]) => {
+  Promise.all([
+    executeCcusageCommand('blocks --json', env)
+  ]).then(([blockData]) => {
     const currentBlock = blockData.blocks.find(block => block.isActive);
-    let blockUsagePercent = 0;
+    const maxTokens = Math.max(...blockData.blocks.map(b => b.totalTokens));
+    const blockUsagePercent = currentBlock ? 
+    (currentBlock.totalTokens / maxTokens) * 100
+    : 0;
     
-    if (currentBlock) {
-      const maxTokens = Math.max(...blockData.blocks.map(b => b.totalTokens));
-      blockUsagePercent = (currentBlock.totalTokens / maxTokens) * 100;
-    }
     
-    if (sessionData && sessionData.sessions && sessionData.sessions.length > 0) {
-      const latestSession = sessionData.sessions[0];
-      const tokens = latestSession.totalTokens || 0;
-      const cost = latestSession.totalCost || 0;
+    updateTrayTitle(`${(currentBlock.totalTokens/1000).toFixed(1)}k | ${blockUsagePercent.toFixed(1)}%`);
       
-      updateTrayTitle(`${(tokens/1000).toFixed(1)}k | ${blockUsagePercent.toFixed(1)}%`);
-      
-      if (window) {
-        window.webContents.send('usage-update', { 
-          sessions: sessionData, 
-          blocks: blockData,
-          blockUsagePercent: blockUsagePercent 
-        });
-      }
-    } else {
-      updateTrayTitle('No data');
+    if (window) {
+      window.webContents.send('usage-update', { 
+        sessions: sessionData, 
+        blocks: blockData,
+        blockUsagePercent: blockUsagePercent 
+      });
     }
   }).catch(error => {
     console.error('Error fetching usage data:', error);
@@ -179,15 +138,14 @@ const updateUsageData = () => {
       const errorMessage = error.message || error.toString();
       let helpMessage = errorMessage;
       
-      if (errorMessage.includes('ccusage') || errorMessage.includes('command not found') || errorMessage.includes('ENOENT')) {
-        helpMessage = `ccusage가 설치되지 않았거나 찾을 수 없습니다.\n\n설치 방법:\n1. Terminal을 열고 다음 명령어를 실행하세요:\n   npm install -g ccusage\n\n2. 설치 후 앱을 재시작하세요.\n\n에러 상세: ${errorMessage}`;
+      if (errorMessage.includes('ccusage') || errorMessage.includes('command not found') || errorMessage.includes('ENOENT') || errorMessage.includes('bunx')) {
+        helpMessage = `ccusage 실행 중 오류가 발생했습니다.\n\nbun이 설치되어 있는지 확인하세요:\n1. Terminal을 열고 다음 명령어를 실행하세요:\n   bun --version\n\n2. bun이 없다면 설치하세요:\n   curl -fsSL https://bun.sh/install | bash\n\n에러 상세: ${errorMessage}`;
       }
       
       window.webContents.send('usage-update', { 
         error: helpMessage
       });
     }
-    });
   });
 };
 
