@@ -129,5 +129,5 @@ ipcRenderer.on('usage-update', (event, data) => {
 document.addEventListener('DOMContentLoaded', () => {
   fetchDailyUsage();
   
-  setInterval(fetchDailyUsage, 1000);
+  setInterval(fetchDailyUsage, 60000 * 5);
 });

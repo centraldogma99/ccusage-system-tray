@@ -79,8 +79,6 @@ const updateTrayTitle = (text) => {
 };
 
 const updateUsageData = () => {
-  console.log('Starting updateUsageData...');
-  
   // Get home directory and add common node paths
   const os = require('os');
   const homeDir = os.homedir();
