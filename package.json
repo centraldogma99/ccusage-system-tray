@@ -1,7 +1,7 @@
 {
-  "name": "claude-usage-menubar",
+  "name": "claude-code-usage-monitor",
   "version": "1.0.0",
-  "description": "Claude Code 토큰 사용량을 macOS 메뉴바에 실시간으로 표시하는 앱",
+  "description": "Claude Code Usage Monitor",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
@@ -10,7 +10,7 @@
     "pack": "electron-builder --dir"
   },
   "keywords": ["claude", "token", "usage", "menubar", "macos"],
-  "author": "Claude Usage Monitor",
+  "author": "Claude Code Usage Monitor",
   "license": "MIT",
   "devDependencies": {
     "electron": "^32.0.0",
@@ -20,14 +20,15 @@
     "ccusage": "^15.5.2"
   },
   "build": {
-    "appId": "com.claude.usage.menubar",
-    "productName": "Claude Usage Monitor",
+    "appId": "com.claude.code.usage.monitor",
+    "productName": "Claude Code Usage Monitor",
     "directories": {
       "output": "dist"
     },
     "mac": {
       "category": "public.app-category.productivity",
-      "target": "dmg"
+      "target": "dmg",
+      "icon": "src/assets/icon.png"
     }
   }
 }

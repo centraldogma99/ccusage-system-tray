@@ -1,6 +1,6 @@
 const { app, BrowserWindow, Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
-const { exec } = require('child_process');
+const { spawn, execFile } = require('child_process');
 const { getBunEnvironment, getCcusageCommand } = require('./utils');
 
 let tray = null;
@@ -14,18 +14,29 @@ let window = null;
  */
 const executeCcusageCommand = (subCommand, env) => {
   return new Promise((resolve, reject) => {
-    const command = getCcusageCommand(subCommand);
-    console.log(`Executing: ${command}`);
+    const fullCommand = getCcusageCommand(subCommand);
+    const parts = fullCommand.split(' ');
+    const cmd = parts[0];
+    const args = parts.slice(1);
     
-    exec(command, { env }, (error, stdout, stderr) => {
+    execFile(cmd, args, {
+      env,
+      maxBuffer: 50 * 1024 * 1024, // 50MB 버퍼
+      encoding: 'utf8'
+    }, (error, stdout, stderr) => {
       if (error) {
         console.error(`ccusage ${subCommand.split(' ')[0]} error:`, error.message);
         console.error('stderr:', stderr);
         reject(new Error(`ccusage ${subCommand.split(' ')[0]} failed: ${error.message}`));
       } else {
         try {
-          resolve(JSON.parse(stdout));
+          const jsonData = JSON.parse(stdout);
+          resolve(jsonData);
         } catch (e) {
+          console.error(`JSON parse error for ${subCommand}:`, e.message);
+          console.error('stdout length:', stdout.length);
+          console.error('stdout first 200 chars:', stdout.slice(0, 200));
+          console.error('stdout last 200 chars:', stdout.slice(-200));
           reject(new Error(`Failed to parse ${subCommand.split(' ')[0]} data: ${e.message}`));
         }
       }
@@ -34,18 +45,21 @@ const executeCcusageCommand = (subCommand, env) => {
 };
 
 const createTray = () => {
-  // 16x16 크기의 기본 트레이 아이콘 생성
-  const iconPath = path.join(__dirname, 'assets', 'tray-icon.png');
-  const icon = nativeImage.createFromPath(iconPath);
-  const resizedIcon = icon.resize({ width: 16, height: 16 });
-
-  tray = new Tray(resizedIcon);
-  tray.setToolTip('Claude Usage Monitor');
+  // PNG 아이콘 사용 (macOS Retina 디스플레이 지원)
+  const iconPath = path.join(__dirname, 'assets', 'icon@1x.png');
+  const icon2xPath = path.join(__dirname, 'assets', 'icon@2x.png');
+  const icon3xPath = path.join(__dirname, 'assets', 'icon@3x.png');
   
+  // Retina 디스플레이를 위한 멀티 해상도 이미지 생성
+  const trayIcon = nativeImage.createFromPath(icon3xPath);
+  
+  // macOS의 경우 템플릿 이미지로 설정 (다크모드 지원)
   if (process.platform === 'darwin') {
-    resizedIcon.setTemplateImage(true);
-    tray.setImage(resizedIcon);
+    trayIcon.setTemplateImage(true);
   }
+
+  tray = new Tray(trayIcon);
+  tray.setToolTip('Claude Code Usage Monitor');
   
   updateTrayTitle('Loading...');
   
@@ -81,6 +95,7 @@ const createWindow = () => {
     show: false,
     frame: false,
     resizable: false,
+    icon: path.join(__dirname, 'assets', 'icon.png'),
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
@@ -108,10 +123,9 @@ const updateTrayTitle = (text) => {
 
 const updateUsageData = () => {
   const env = getBunEnvironment();
-  console.log('Using PATH with bun:', env.PATH);
   
   Promise.all([
-    executeCcusageCommand('blocks --json', env),
+    executeCcusageCommand('blocks --json --recent', env),
     executeCcusageCommand('daily --json', env)
   ]).then(([blockData, dailyData]) => {
     const currentBlock = blockData.blocks.find(block => block.isActive);
@@ -132,7 +146,6 @@ const updateUsageData = () => {
     }
   }).catch(error => {
     console.error('Error fetching usage data:', error);
-    console.error('Full error:', error.stack);
     updateTrayTitle('Error');
     
     if (window) {
@@ -151,10 +164,13 @@ const updateUsageData = () => {
 };
 
 app.whenReady().then(() => {
-  createTray();
-  updateUsageData();
-  
-  setInterval(updateUsageData, 5000);
+  try {
+    createTray();
+    updateUsageData();
+    setInterval(updateUsageData, 5000);
+  } catch (error) {
+    console.error('Error in app.whenReady:', error);
+  }
 });
 
 app.on('window-all-closed', (event) => {
