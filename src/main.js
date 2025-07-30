@@ -73,6 +73,18 @@ const createTray = () => {
     },
     { type: 'separator' },
     {
+      label: 'Start at Login',
+      type: 'checkbox',
+      checked: app.getLoginItemSettings().openAtLogin,
+      click: (menuItem) => {
+        app.setLoginItemSettings({
+          openAtLogin: menuItem.checked,
+          openAsHidden: true
+        });
+      }
+    },
+    { type: 'separator' },
+    {
       label: 'Quit',
       click: () => app.quit()
     }
