@@ -1,10 +1,11 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain } = require('electron');
 const path = require('path');
 const { spawn, execFile } = require('child_process');
 const { getBunEnvironment, getCcusageCommand } = require('./utils');
 
 let tray = null;
 let window = null;
+let maxTokenLimit = 88000;
 
 /**
  * ccusage 명령을 실행하고 결과를 파싱하여 반환합니다.
@@ -21,7 +22,7 @@ const executeCcusageCommand = (subCommand, env) => {
     
     execFile(cmd, args, {
       env,
-      maxBuffer: 50 * 1024 * 1024, // 50MB 버퍼
+      maxBuffer: 10 * 1024 * 1024, // 10MB 버퍼
       encoding: 'utf8'
     }, (error, stdout, stderr) => {
       if (error) {
@@ -45,19 +46,11 @@ const executeCcusageCommand = (subCommand, env) => {
 };
 
 const createTray = () => {
-  // PNG 아이콘 사용 (macOS Retina 디스플레이 지원)
-  const iconPath = path.join(__dirname, 'assets', 'icon@1x.png');
-  const icon2xPath = path.join(__dirname, 'assets', 'icon@2x.png');
-  const icon3xPath = path.join(__dirname, 'assets', 'icon@3x.png');
-  
-  // Retina 디스플레이를 위한 멀티 해상도 이미지 생성
-  const trayIcon = nativeImage.createFromPath(icon3xPath);
-  
-  // macOS의 경우 템플릿 이미지로 설정 (다크모드 지원)
+  const iconPath = path.join(__dirname, 'assets', 'icon@2x.png');
+  const trayIcon = nativeImage.createFromPath(iconPath);
   if (process.platform === 'darwin') {
     trayIcon.setTemplateImage(true);
   }
-
   tray = new Tray(trayIcon);
   tray.setToolTip('Claude Code Usage Monitor');
   
@@ -125,17 +118,14 @@ const updateUsageData = () => {
   const env = getBunEnvironment();
   
   Promise.all([
-    executeCcusageCommand('blocks --json --recent', env),
+    executeCcusageCommand(`blocks -t ${maxTokenLimit} --active --json`, env),
     executeCcusageCommand('daily --json', env)
   ]).then(([blockData, dailyData]) => {
-    const currentBlock = blockData.blocks.find(block => block.isActive);
-    const maxTokens = Math.max(...blockData.blocks.map(b => b.totalTokens));
-    const blockUsagePercent = currentBlock ? 
-    (currentBlock.totalTokens / maxTokens) * 100
-    : 0;
+    const currentBlock = blockData.blocks[0];
+    const currentBlockUsage = currentBlock.tokenCounts.inputTokens + currentBlock.tokenCounts.outputTokens;
+    const blockUsagePercent = (currentBlockUsage / maxTokenLimit * 100).toFixed(1);
     
-    
-    updateTrayTitle(`${(currentBlock.totalTokens/1000).toFixed(1)}k | ${blockUsagePercent.toFixed(1)}%`);
+    updateTrayTitle(`${(currentBlockUsage/1000).toFixed(1)}k | ${blockUsagePercent}%`);
       
     if (window) {
       window.webContents.send('usage-update', { 
@@ -163,7 +153,16 @@ const updateUsageData = () => {
   });
 };
 
+ipcMain.on('max-tokens-update', (event, newMaxTokens) => {
+  maxTokenLimit = newMaxTokens;
+  updateUsageData();
+});
+
 app.whenReady().then(() => {
+  if (process.platform === 'darwin') {
+    app.dock.hide();
+  }
+  
   try {
     createTray();
     updateUsageData();
@@ -182,5 +181,3 @@ app.on('activate', () => {
     createWindow();
   }
 });
-
-app.dock.hide();

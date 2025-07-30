@@ -10,7 +10,7 @@ const updateDisplay = (data) => {
   if (data.blocks && data.blocks.blocks) {
     const currentBlock = data.blocks.blocks.find(block => block.isActive);
     if (currentBlock) {
-      const maxTokens = Math.max(...data.blocks.blocks.map(b => b.totalTokens));
+      const maxTokens = parseInt(localStorage.getItem('maxTokens') || '88000');
       const blockPercent = (currentBlock.totalTokens / maxTokens) * 100;
       
       document.getElementById('block-usage').textContent = `${blockPercent.toFixed(1)}%`;
@@ -63,3 +63,29 @@ ipcRenderer.on('usage-update', (event, data) => {
   updateDisplay(data);
 });
 
+
+document.addEventListener('DOMContentLoaded', () => {
+  const savedMaxTokens = localStorage.getItem('maxTokens');
+  if (savedMaxTokens) {
+    document.getElementById('max-tokens').value = savedMaxTokens;
+  }
+  
+  document.getElementById('save-max-tokens').addEventListener('click', () => {
+    const maxTokens = document.getElementById('max-tokens').value;
+    localStorage.setItem('maxTokens', maxTokens);
+    ipcRenderer.send('max-tokens-update', parseInt(maxTokens));
+    
+    const button = document.getElementById('save-max-tokens');
+    const originalText = button.textContent;
+    button.textContent = 'Saved!';
+    button.style.background = '#27ae60';
+    
+    setTimeout(() => {
+      button.textContent = originalText;
+      button.style.background = '#3498db';
+    }, 2000);
+  });
+  
+  const maxTokens = localStorage.getItem('maxTokens') || '88000';
+  ipcRenderer.send('max-tokens-update', parseInt(maxTokens));
+});
