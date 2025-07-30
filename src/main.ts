@@ -1,19 +1,14 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain } = require('electron');
-const path = require('path');
-const { spawn, execFile } = require('child_process');
-const { getBunEnvironment, getCcusageCommand } = require('./utils');
+import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, IpcMainEvent } from 'electron';
+import * as path from 'path';
+import { execFile } from 'child_process';
+import { getBunEnvironment, getCcusageCommand } from './utils';
+import { BlockData, DailyData, UsageUpdateData } from './types';
 
-let tray = null;
-let window = null;
-let maxTokenLimit = 88000;
+let tray: Tray | null = null;
+let window: BrowserWindow | null = null;
+let maxTokenLimit: number = 88000;
 
-/**
- * ccusage 명령을 실행하고 결과를 파싱하여 반환합니다.
- * @param {string} subCommand - ccusage 하위 명령어 (예: 'session --json --limit 1')
- * @param {Object} env - 환경변수 객체
- * @returns {Promise<Object>} 파싱된 JSON 결과
- */
-const executeCcusageCommand = (subCommand, env) => {
+const executeCcusageCommand = (subCommand: string, env: NodeJS.ProcessEnv): Promise<any> => {
   return new Promise((resolve, reject) => {
     const fullCommand = getCcusageCommand(subCommand);
     const parts = fullCommand.split(' ');
@@ -22,7 +17,7 @@ const executeCcusageCommand = (subCommand, env) => {
     
     execFile(cmd, args, {
       env,
-      maxBuffer: 10 * 1024 * 1024, // 10MB 버퍼
+      maxBuffer: 10 * 1024 * 1024,
       encoding: 'utf8'
     }, (error, stdout, stderr) => {
       if (error) {
@@ -34,18 +29,19 @@ const executeCcusageCommand = (subCommand, env) => {
           const jsonData = JSON.parse(stdout);
           resolve(jsonData);
         } catch (e) {
-          console.error(`JSON parse error for ${subCommand}:`, e.message);
+          const parseError = e as Error;
+          console.error(`JSON parse error for ${subCommand}:`, parseError.message);
           console.error('stdout length:', stdout.length);
           console.error('stdout first 200 chars:', stdout.slice(0, 200));
           console.error('stdout last 200 chars:', stdout.slice(-200));
-          reject(new Error(`Failed to parse ${subCommand.split(' ')[0]} data: ${e.message}`));
+          reject(new Error(`Failed to parse ${subCommand.split(' ')[0]} data: ${parseError.message}`));
         }
       }
     });
   });
 };
 
-const createTray = () => {
+const createTray = (): void => {
   const iconPath = path.join(__dirname, 'assets', 'icon@2x.png');
   const trayIcon = nativeImage.createFromPath(iconPath);
   if (process.platform === 'darwin') {
@@ -93,7 +89,7 @@ const createTray = () => {
   tray.setContextMenu(contextMenu);
 };
 
-const createWindow = () => {
+const createWindow = (): void => {
   window = new BrowserWindow({
     width: 400,
     height: 600,
@@ -107,10 +103,10 @@ const createWindow = () => {
     }
   });
   
-  window.loadFile('src/renderer.html');
+  window.loadFile(path.join(__dirname, 'renderer.html'));
   
   window.on('blur', () => {
-    window.hide();
+    window!.hide();
   });
   
   window.on('closed', () => {
@@ -120,18 +116,18 @@ const createWindow = () => {
   window.show();
 };
 
-const updateTrayTitle = (text) => {
+const updateTrayTitle = (text: string): void => {
   if (tray) {
     tray.setTitle(text);
   }
 };
 
-const updateUsageData = () => {
+const updateUsageData = (): void => {
   const env = getBunEnvironment();
   
   Promise.all([
-    executeCcusageCommand(`blocks -t ${maxTokenLimit} --active --json`, env),
-    executeCcusageCommand('daily --json', env)
+    executeCcusageCommand(`blocks -t ${maxTokenLimit} --active --json`, env) as Promise<BlockData>,
+    executeCcusageCommand('daily --json', env) as Promise<DailyData>
   ]).then(([blockData, dailyData]) => {
     const currentBlock = blockData.blocks[0];
     const currentBlockUsage = currentBlock.tokenCounts.inputTokens + currentBlock.tokenCounts.outputTokens;
@@ -140,13 +136,14 @@ const updateUsageData = () => {
     updateTrayTitle(`${(currentBlockUsage/1000).toFixed(1)}k | ${blockUsagePercent}%`);
       
     if (window) {
-      window.webContents.send('usage-update', { 
+      const updateData: UsageUpdateData = { 
         blocks: blockData,
         blockUsagePercent: blockUsagePercent,
         daily: dailyData 
-      });
+      };
+      window.webContents.send('usage-update', updateData);
     }
-  }).catch(error => {
+  }).catch((error: Error) => {
     console.error('Error fetching usage data:', error);
     updateTrayTitle('Error');
     
@@ -158,14 +155,15 @@ const updateUsageData = () => {
         helpMessage = `ccusage 실행 중 오류가 발생했습니다.\n\nbun이 설치되어 있는지 확인하세요:\n1. Terminal을 열고 다음 명령어를 실행하세요:\n   bun --version\n\n2. bun이 없다면 설치하세요:\n   curl -fsSL https://bun.sh/install | bash\n\n에러 상세: ${errorMessage}`;
       }
       
-      window.webContents.send('usage-update', { 
+      const updateData: UsageUpdateData = { 
         error: helpMessage
-      });
+      };
+      window.webContents.send('usage-update', updateData);
     }
   });
 };
 
-ipcMain.on('max-tokens-update', (event, newMaxTokens) => {
+ipcMain.on('max-tokens-update', (_event: IpcMainEvent, newMaxTokens: number) => {
   maxTokenLimit = newMaxTokens;
   updateUsageData();
 });
@@ -184,7 +182,7 @@ app.whenReady().then(() => {
   }
 });
 
-app.on('window-all-closed', (event) => {
+app.on('window-all-closed', (event: Event) => {
   event.preventDefault();
 });
 
