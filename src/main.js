@@ -1,10 +1,11 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain } = require('electron');
 const path = require('path');
-const { exec } = require('child_process');
+const { spawn, execFile } = require('child_process');
 const { getBunEnvironment, getCcusageCommand } = require('./utils');
 
 let tray = null;
 let window = null;
+let maxTokenLimit = 88000;
 
 /**
  * ccusage 명령을 실행하고 결과를 파싱하여 반환합니다.
@@ -14,18 +15,29 @@ let window = null;
  */
 const executeCcusageCommand = (subCommand, env) => {
   return new Promise((resolve, reject) => {
-    const command = getCcusageCommand(subCommand);
-    console.log(`Executing: ${command}`);
+    const fullCommand = getCcusageCommand(subCommand);
+    const parts = fullCommand.split(' ');
+    const cmd = parts[0];
+    const args = parts.slice(1);
     
-    exec(command, { env }, (error, stdout, stderr) => {
+    execFile(cmd, args, {
+      env,
+      maxBuffer: 10 * 1024 * 1024, // 10MB 버퍼
+      encoding: 'utf8'
+    }, (error, stdout, stderr) => {
       if (error) {
         console.error(`ccusage ${subCommand.split(' ')[0]} error:`, error.message);
         console.error('stderr:', stderr);
         reject(new Error(`ccusage ${subCommand.split(' ')[0]} failed: ${error.message}`));
       } else {
         try {
-          resolve(JSON.parse(stdout));
+          const jsonData = JSON.parse(stdout);
+          resolve(jsonData);
         } catch (e) {
+          console.error(`JSON parse error for ${subCommand}:`, e.message);
+          console.error('stdout length:', stdout.length);
+          console.error('stdout first 200 chars:', stdout.slice(0, 200));
+          console.error('stdout last 200 chars:', stdout.slice(-200));
           reject(new Error(`Failed to parse ${subCommand.split(' ')[0]} data: ${e.message}`));
         }
       }
@@ -34,18 +46,13 @@ const executeCcusageCommand = (subCommand, env) => {
 };
 
 const createTray = () => {
-  // 16x16 크기의 기본 트레이 아이콘 생성
-  const iconPath = path.join(__dirname, 'assets', 'tray-icon.png');
-  const icon = nativeImage.createFromPath(iconPath);
-  const resizedIcon = icon.resize({ width: 16, height: 16 });
-
-  tray = new Tray(resizedIcon);
-  tray.setToolTip('Claude Usage Monitor');
-  
+  const iconPath = path.join(__dirname, 'assets', 'icon@2x.png');
+  const trayIcon = nativeImage.createFromPath(iconPath);
   if (process.platform === 'darwin') {
-    resizedIcon.setTemplateImage(true);
-    tray.setImage(resizedIcon);
+    trayIcon.setTemplateImage(true);
   }
+  tray = new Tray(trayIcon);
+  tray.setToolTip('Claude Code Usage Monitor');
   
   updateTrayTitle('Loading...');
   
@@ -66,6 +73,18 @@ const createTray = () => {
     },
     { type: 'separator' },
     {
+      label: 'Start at Login',
+      type: 'checkbox',
+      checked: app.getLoginItemSettings().openAtLogin,
+      click: (menuItem) => {
+        app.setLoginItemSettings({
+          openAtLogin: menuItem.checked,
+          openAsHidden: true
+        });
+      }
+    },
+    { type: 'separator' },
+    {
       label: 'Quit',
       click: () => app.quit()
     }
@@ -81,6 +100,7 @@ const createWindow = () => {
     show: false,
     frame: false,
     resizable: false,
+    icon: path.join(__dirname, 'assets', 'icon.png'),
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
@@ -108,20 +128,16 @@ const updateTrayTitle = (text) => {
 
 const updateUsageData = () => {
   const env = getBunEnvironment();
-  console.log('Using PATH with bun:', env.PATH);
   
   Promise.all([
-    executeCcusageCommand('blocks --json', env),
+    executeCcusageCommand(`blocks -t ${maxTokenLimit} --active --json`, env),
     executeCcusageCommand('daily --json', env)
   ]).then(([blockData, dailyData]) => {
-    const currentBlock = blockData.blocks.find(block => block.isActive);
-    const maxTokens = Math.max(...blockData.blocks.map(b => b.totalTokens));
-    const blockUsagePercent = currentBlock ? 
-    (currentBlock.totalTokens / maxTokens) * 100
-    : 0;
+    const currentBlock = blockData.blocks[0];
+    const currentBlockUsage = currentBlock.tokenCounts.inputTokens + currentBlock.tokenCounts.outputTokens;
+    const blockUsagePercent = (currentBlockUsage / maxTokenLimit * 100).toFixed(1);
     
-    
-    updateTrayTitle(`${(currentBlock.totalTokens/1000).toFixed(1)}k | ${blockUsagePercent.toFixed(1)}%`);
+    updateTrayTitle(`${(currentBlockUsage/1000).toFixed(1)}k | ${blockUsagePercent}%`);
       
     if (window) {
       window.webContents.send('usage-update', { 
@@ -132,7 +148,6 @@ const updateUsageData = () => {
     }
   }).catch(error => {
     console.error('Error fetching usage data:', error);
-    console.error('Full error:', error.stack);
     updateTrayTitle('Error');
     
     if (window) {
@@ -150,11 +165,23 @@ const updateUsageData = () => {
   });
 };
 
-app.whenReady().then(() => {
-  createTray();
+ipcMain.on('max-tokens-update', (event, newMaxTokens) => {
+  maxTokenLimit = newMaxTokens;
   updateUsageData();
+});
+
+app.whenReady().then(() => {
+  if (process.platform === 'darwin') {
+    app.dock.hide();
+  }
   
-  setInterval(updateUsageData, 5000);
+  try {
+    createTray();
+    updateUsageData();
+    setInterval(updateUsageData, 5000);
+  } catch (error) {
+    console.error('Error in app.whenReady:', error);
+  }
 });
 
 app.on('window-all-closed', (event) => {
@@ -166,5 +193,3 @@ app.on('activate', () => {
     createWindow();
   }
 });
-
-app.dock.hide();

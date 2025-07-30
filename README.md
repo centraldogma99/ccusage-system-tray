@@ -1,4 +1,4 @@
-# Claude Usage Monitor for macOS
+# Claude Code Usage Monitor for macOS
 
 Claude Code의 토큰 사용량을 macOS 메뉴바에 실시간으로 표시하는 앱입니다.
 
@@ -19,23 +19,18 @@ Claude Code의 토큰 사용량을 macOS 메뉴바에 실시간으로 표시하�
 
 ## 설치 및 실행
 
-1. 저장소 클론:
-```bash
-git clone https://github.com/your-username/claude-usage-macos.git
-cd claude-usage-macos
-```
 
-2. 의존성 설치:
+1. 의존성 설치:
 ```bash
 npm install
 ```
 
-3. 개발 모드로 실행:
+2. 개발 모드로 실행:
 ```bash
 npm run dev
 ```
 
-4. 앱 빌드 (선택사항):
+3. 앱 빌드 (선택사항):
 ```bash
 npm run build
 ```
