@@ -2,19 +2,32 @@
   "name": "claude-code-usage-monitor",
   "version": "1.0.0",
   "description": "Claude Code Usage Monitor",
-  "main": "src/main.js",
+  "main": "dist/main.js",
   "scripts": {
-    "start": "electron .",
-    "dev": "electron . --dev",
-    "build": "electron-builder",
-    "pack": "electron-builder --dir"
+    "compile": "tsc && npm run copy-files",
+    "copy-files": "cp -r src/renderer.html src/assets dist/",
+    "start": "npm run compile && electron .",
+    "dev": "npm run compile && electron . --dev",
+    "watch": "tsc -w",
+    "build": "npm run compile && electron-builder",
+    "pack": "npm run compile && electron-builder --dir",
+    "clean": "rm -rf dist"
   },
-  "keywords": ["claude", "token", "usage", "menubar", "macos"],
+  "keywords": [
+    "claude",
+    "token",
+    "usage",
+    "menubar",
+    "macos"
+  ],
   "author": "Claude Code Usage Monitor",
   "license": "MIT",
   "devDependencies": {
+    "@types/electron": "^1.4.38",
+    "@types/node": "^24.1.0",
     "electron": "^32.0.0",
-    "electron-builder": "^25.0.0"
+    "electron-builder": "^25.1.8",
+    "typescript": "^5.8.3"
   },
   "dependencies": {
     "ccusage": "^15.5.2"
