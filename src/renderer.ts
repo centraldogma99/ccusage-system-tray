@@ -1,75 +1,61 @@
-import { ipcRenderer, IpcRendererEvent } from 'electron';
+const { ipcRenderer } = require('electron');
 
-interface UIBlock {
-  isActive: boolean;
-  totalTokens: number;
-  costUSD: number;
-  startTime: string;
-  endTime: string;
-}
+const DEFAULT_MAX_TOKEN_LIMIT = 88000;
 
-interface DailyEntry {
-  date: string;
-  totalTokens: number;
-  totalCost: number;
-}
-
-interface ExtendedUsageData {
-  blocks?: {
-    blocks: UIBlock[];
-  };
+interface UsageUpdateData {
+  currentBlock?: any;
   blockUsagePercent?: string;
-  daily?: {
-    daily: DailyEntry[];
-  };
   error?: string;
 }
 
 
-const updateDisplay = (data: ExtendedUsageData): void => {
+const updateDisplay = (data: UsageUpdateData): void => {
   if (!data) return;
   
-  if (data.blocks && data.blocks.blocks) {
-    const currentBlock = data.blocks.blocks.find(block => block.isActive);
+  if (data.currentBlock) {
+    const {currentBlock} = data;
     if (currentBlock) {
-      const maxTokens = parseInt(localStorage.getItem('maxTokens') || '88000');
-      const blockPercent = (currentBlock.totalTokens / maxTokens) * 100;
+      
+      
       
       const blockUsageEl = document.getElementById('block-usage');
       const blockProgressEl = document.getElementById('block-progress') as HTMLElement;
-      const blockCostEl = document.getElementById('block-cost');
+      const blockLabelEl = document.getElementById('block-label');
+      const tokenDetailsEl = document.getElementById('token-details');
       
-      if (blockUsageEl) blockUsageEl.textContent = `${blockPercent.toFixed(1)}%`;
-      if (blockProgressEl) blockProgressEl.style.width = `${blockPercent}%`;
-      if (blockCostEl) blockCostEl.textContent = `$${currentBlock.costUSD.toFixed(2)}`;
+      if (blockUsageEl) blockUsageEl.textContent = `${Number(data.blockUsagePercent).toFixed(1)}%`;
+      if (blockProgressEl) blockProgressEl.style.width = `${Number(data.blockUsagePercent)}%`;
       
+      // Display token details
+      if (tokenDetailsEl && currentBlock.tokenCounts) {
+        const inputTokens = currentBlock.tokenCounts.inputTokens || 0;
+        const outputTokens = currentBlock.tokenCounts.outputTokens || 0;
+        const totalTokens = inputTokens + outputTokens;
+        tokenDetailsEl.textContent = `Input: ${inputTokens.toLocaleString()} | Output: ${outputTokens.toLocaleString()} | Total: ${totalTokens.toLocaleString()}`;
+      }
+      
+      const startTime = new Date(currentBlock.startTime);
       const endTime = new Date(currentBlock.endTime);
       const now = new Date();
       const remaining = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 60000));
       
+      // Update block label with time range
+      if (blockLabelEl) {
+        const startTimeStr = startTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+        const endTimeStr = endTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+        blockLabelEl.textContent = `Current Block (${startTimeStr} - ${endTimeStr})`;
+      }
+      
       const blockTimeEl = document.getElementById('block-time');
       if (blockTimeEl) {
-        blockTimeEl.textContent = remaining > 0 ? `${remaining}분 남음` : '종료됨';
+        const hours = Math.floor(remaining / 60);
+          const minutes = remaining % 60;
+          if (hours > 0) {
+            blockTimeEl.textContent = `${hours}시간 ${minutes}분 남음`;
+          } else {
+            blockTimeEl.textContent = `${minutes}분 남음`;
+          }
       }
-    }
-  }
-  
-  if (data.daily && data.daily.daily && data.daily.daily.length > 0) {
-    const today = data.daily.daily.find(d => {
-      const date = new Date(d.date);
-      const todayDate = new Date();
-      return date.toDateString() === todayDate.toDateString();
-    });
-    
-    const dayData = today || data.daily.daily[0];
-    const dailyTokensEl = document.getElementById('daily-tokens');
-    const dailyCostEl = document.getElementById('daily-cost');
-    
-    if (dailyTokensEl) {
-      dailyTokensEl.textContent = `${(dayData.totalTokens / 1000).toFixed(1)}k`;
-    }
-    if (dailyCostEl) {
-      dailyCostEl.textContent = `$${dayData.totalCost.toFixed(2)}`;
     }
   }
   
@@ -79,7 +65,7 @@ const updateDisplay = (data: ExtendedUsageData): void => {
   }
 };
 
-ipcRenderer.on('usage-update', (_event: IpcRendererEvent, data: ExtendedUsageData) => {
+ipcRenderer.on('usage-update', (_event: any, data: UsageUpdateData) => {
   if (data.error) {
     document.body.innerHTML = `
       <div style="padding: 20px;">
@@ -99,8 +85,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const savedMaxTokens = localStorage.getItem('maxTokens');
   const maxTokensInput = document.getElementById('max-tokens') as HTMLInputElement;
   
-  if (savedMaxTokens && maxTokensInput) {
-    maxTokensInput.value = savedMaxTokens;
+  if (maxTokensInput) {
+    maxTokensInput.value = savedMaxTokens || DEFAULT_MAX_TOKEN_LIMIT.toString();
   }
   
   const saveButton = document.getElementById('save-max-tokens') as HTMLButtonElement;
@@ -117,12 +103,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         setTimeout(() => {
           saveButton.textContent = originalText;
-          saveButton.style.background = '#3498db';
+          saveButton.style.background = '';
         }, 2000);
       }
     });
   }
   
-  const maxTokens = localStorage.getItem('maxTokens') || '88000';
+  const maxTokens = localStorage.getItem('maxTokens') || DEFAULT_MAX_TOKEN_LIMIT.toString();
   ipcRenderer.send('max-tokens-update', parseInt(maxTokens));
 });

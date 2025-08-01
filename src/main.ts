@@ -2,11 +2,12 @@ import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, IpcMainEvent } fr
 import * as path from 'path';
 import { execFile } from 'child_process';
 import { getBunEnvironment, getCcusageCommand } from './utils';
-import { BlockData, DailyData, UsageUpdateData } from './types';
+import { BlockData, UsageUpdateData } from './types';
+import { DEFAULT_MAX_TOKEN_LIMIT } from './constants';
 
 let tray: Tray | null = null;
 let window: BrowserWindow | null = null;
-let maxTokenLimit: number = 88000;
+let maxTokenLimit: number = DEFAULT_MAX_TOKEN_LIMIT;
 
 const executeCcusageCommand = (subCommand: string, env: NodeJS.ProcessEnv): Promise<any> => {
   return new Promise((resolve, reject) => {
@@ -14,30 +15,37 @@ const executeCcusageCommand = (subCommand: string, env: NodeJS.ProcessEnv): Prom
     const parts = fullCommand.split(' ');
     const cmd = parts[0];
     const args = parts.slice(1);
-    
-    execFile(cmd, args, {
-      env,
-      maxBuffer: 10 * 1024 * 1024,
-      encoding: 'utf8'
-    }, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`ccusage ${subCommand.split(' ')[0]} error:`, error.message);
-        console.error('stderr:', stderr);
-        reject(new Error(`ccusage ${subCommand.split(' ')[0]} failed: ${error.message}`));
-      } else {
-        try {
-          const jsonData = JSON.parse(stdout);
-          resolve(jsonData);
-        } catch (e) {
-          const parseError = e as Error;
-          console.error(`JSON parse error for ${subCommand}:`, parseError.message);
-          console.error('stdout length:', stdout.length);
-          console.error('stdout first 200 chars:', stdout.slice(0, 200));
-          console.error('stdout last 200 chars:', stdout.slice(-200));
-          reject(new Error(`Failed to parse ${subCommand.split(' ')[0]} data: ${parseError.message}`));
+
+    execFile(
+      cmd,
+      args,
+      {
+        env,
+        maxBuffer: 10 * 1024 * 1024,
+        encoding: 'utf8',
+      },
+      (error, stdout, stderr) => {
+        if (error) {
+          console.error(`ccusage ${subCommand.split(' ')[0]} error:`, error.message);
+          console.error('stderr:', stderr);
+          reject(new Error(`ccusage ${subCommand.split(' ')[0]} failed: ${error.message}`));
+        } else {
+          try {
+            const jsonData = JSON.parse(stdout);
+            resolve(jsonData);
+          } catch (e) {
+            const parseError = e as Error;
+            console.error(`JSON parse error for ${subCommand}:`, parseError.message);
+            console.error('stdout length:', stdout.length);
+            console.error('stdout first 200 chars:', stdout.slice(0, 200));
+            console.error('stdout last 200 chars:', stdout.slice(-200));
+            reject(
+              new Error(`Failed to parse ${subCommand.split(' ')[0]} data: ${parseError.message}`)
+            );
+          }
         }
       }
-    });
+    );
   });
 };
 
@@ -49,9 +57,9 @@ const createTray = (): void => {
   }
   tray = new Tray(trayIcon);
   tray.setToolTip('Claude Code Usage Monitor');
-  
+
   updateTrayTitle('Loading...');
-  
+
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Show Details',
@@ -61,11 +69,12 @@ const createTray = (): void => {
         } else {
           createWindow();
         }
-      }
+        setTimeout(() => updateUsageData(), 100);
+      },
     },
     {
       label: 'Refresh',
-      click: () => updateUsageData()
+      click: () => updateUsageData(),
     },
     { type: 'separator' },
     {
@@ -75,17 +84,17 @@ const createTray = (): void => {
       click: (menuItem) => {
         app.setLoginItemSettings({
           openAtLogin: menuItem.checked,
-          openAsHidden: true
+          openAsHidden: true,
         });
-      }
+      },
     },
     { type: 'separator' },
     {
       label: 'Quit',
-      click: () => app.quit()
-    }
+      click: () => app.quit(),
+    },
   ]);
-  
+
   tray.setContextMenu(contextMenu);
 };
 
@@ -99,20 +108,24 @@ const createWindow = (): void => {
     icon: path.join(__dirname, 'assets', 'icon.png'),
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
-    }
+      contextIsolation: false,
+    },
   });
-  
+
   window.loadFile(path.join(__dirname, 'renderer.html'));
-  
+
+  window.webContents.once('did-finish-load', () => {
+    updateUsageData();
+  });
+
   window.on('blur', () => {
     window!.hide();
   });
-  
+
   window.on('closed', () => {
     window = null;
   });
-  
+
   window.show();
 };
 
@@ -124,43 +137,50 @@ const updateTrayTitle = (text: string): void => {
 
 const updateUsageData = (): void => {
   const env = getBunEnvironment();
-  
+
   Promise.all([
     executeCcusageCommand(`blocks -t ${maxTokenLimit} --active --json`, env) as Promise<BlockData>,
-    executeCcusageCommand('daily --json', env) as Promise<DailyData>
-  ]).then(([blockData, dailyData]) => {
-    const currentBlock = blockData.blocks[0];
-    const currentBlockUsage = currentBlock.tokenCounts.inputTokens + currentBlock.tokenCounts.outputTokens;
-    const blockUsagePercent = (currentBlockUsage / maxTokenLimit * 100).toFixed(1);
-    
-    updateTrayTitle(`${(currentBlockUsage/1000).toFixed(1)}k | ${blockUsagePercent}%`);
-      
-    if (window) {
-      const updateData: UsageUpdateData = { 
-        blocks: blockData,
-        blockUsagePercent: blockUsagePercent,
-        daily: dailyData 
-      };
-      window.webContents.send('usage-update', updateData);
-    }
-  }).catch((error: Error) => {
-    console.error('Error fetching usage data:', error);
-    updateTrayTitle('Error');
-    
-    if (window) {
-      const errorMessage = error.message || error.toString();
-      let helpMessage = errorMessage;
-      
-      if (errorMessage.includes('ccusage') || errorMessage.includes('command not found') || errorMessage.includes('ENOENT') || errorMessage.includes('bunx')) {
-        helpMessage = `ccusage 실행 중 오류가 발생했습니다.\n\nbun이 설치되어 있는지 확인하세요:\n1. Terminal을 열고 다음 명령어를 실행하세요:\n   bun --version\n\n2. bun이 없다면 설치하세요:\n   curl -fsSL https://bun.sh/install | bash\n\n에러 상세: ${errorMessage}`;
+  ])
+    .then(([blockData]) => {
+      const currentBlock = blockData.blocks[0];
+      const currentBlockUsage =
+        currentBlock.tokenCounts.inputTokens + currentBlock.tokenCounts.outputTokens;
+      const blockUsagePercent = ((currentBlockUsage / maxTokenLimit) * 100).toFixed(1);
+
+      updateTrayTitle(`${(currentBlockUsage / 1000).toFixed(1)}k | ${blockUsagePercent}%`);
+
+      if (window) {
+        const updateData: UsageUpdateData = {
+          currentBlock: currentBlock,
+          blockUsagePercent: blockUsagePercent,
+          error: undefined,
+        };
+        window.webContents.send('usage-update', updateData);
       }
-      
-      const updateData: UsageUpdateData = { 
-        error: helpMessage
-      };
-      window.webContents.send('usage-update', updateData);
-    }
-  });
+    })
+    .catch((error: Error) => {
+      console.error('Error fetching usage data:', error);
+      updateTrayTitle('Error');
+
+      if (window) {
+        const errorMessage = error.message || error.toString();
+        let helpMessage = errorMessage;
+
+        if (
+          errorMessage.includes('ccusage') ||
+          errorMessage.includes('command not found') ||
+          errorMessage.includes('ENOENT') ||
+          errorMessage.includes('bunx')
+        ) {
+          helpMessage = `ccusage 실행 중 오류가 발생했습니다.\n\nbun이 설치되어 있는지 확인하세요:\n1. Terminal을 열고 다음 명령어를 실행하세요:\n   bun --version\n\n2. bun이 없다면 설치하세요:\n   curl -fsSL https://bun.sh/install | bash\n\n에러 상세: ${errorMessage}`;
+        }
+
+        const updateData: UsageUpdateData = {
+          error: helpMessage,
+        };
+        window.webContents.send('usage-update', updateData);
+      }
+    });
 };
 
 ipcMain.on('max-tokens-update', (_event: IpcMainEvent, newMaxTokens: number) => {
@@ -172,11 +192,11 @@ app.whenReady().then(() => {
   if (process.platform === 'darwin') {
     app.dock.hide();
   }
-  
+
   try {
     createTray();
     updateUsageData();
-    setInterval(updateUsageData, 5000);
+    setInterval(updateUsageData, 60000);
   } catch (error) {
     console.error('Error in app.whenReady:', error);
   }

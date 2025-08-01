@@ -4,14 +4,16 @@
   "description": "Claude Code Usage Monitor",
   "main": "dist/main.js",
   "scripts": {
-    "compile": "tsc && npm run copy-files",
-    "copy-files": "cp -r src/renderer.html src/assets dist/",
+    "compile": "tsc && tsc -p tsconfig.renderer.json && npm run copy-files",
+    "copy-files": "cp -r src/renderer.html src/styles.css src/assets dist/",
     "start": "npm run compile && electron .",
     "dev": "npm run compile && electron . --dev",
     "watch": "tsc -w",
     "build": "npm run compile && electron-builder",
     "pack": "npm run compile && electron-builder --dir",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "format": "prettier --write \"src/**/*.{ts,js,html,css,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js,html,css,json}\""
   },
   "keywords": [
     "claude",
@@ -27,6 +29,7 @@
     "@types/node": "^24.1.0",
     "electron": "^32.0.0",
     "electron-builder": "^25.1.8",
+    "prettier": "^3.6.2",
     "typescript": "^5.8.3"
   },
   "dependencies": {
@@ -36,8 +39,15 @@
     "appId": "com.claude.code.usage.monitor",
     "productName": "Claude Code Usage Monitor",
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "build"
     },
+    "files": [
+      "dist/**/*",
+      "!dist/mac-arm64/**/*",
+      "!dist/builder-*.yml",
+      "!dist/builder-*.yaml"
+    ],
     "mac": {
       "category": "public.app-category.productivity",
       "target": "dmg",
