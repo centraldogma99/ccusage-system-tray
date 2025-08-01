@@ -19,11 +19,6 @@ Claude Code의 토큰 사용량을 macOS 메뉴바에 실시간으로 표시하�
 <img width="401" height="600" alt="스크린샷 2025-08-01 오후 5 50 36" src="https://github.com/user-attachments/assets/832eb79b-0965-412e-a5e4-c6560949c608" />
 
 ## 빌드 및 설치
-이 프로그램을 사용하려면 시스템에 [bun](https://bun.com/)이 설치되어 있어야 합니다. 설치되어 있지 않다면 다음 명령어로 설치하세요:
-```bash
-curl -fsSL https://bun.sh/install
-```
-
 프로젝트 루트에서 다음 명령어로 소스를 빌드하세요:
 ```bash
 npm run build
