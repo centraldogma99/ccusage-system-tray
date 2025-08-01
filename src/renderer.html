@@ -1,49 +1,44 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-  <meta charset="UTF-8">
-  <title>Claude Code Usage Monitor</title>
-  <link rel="stylesheet" href="styles.css">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'"/>
-  <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self'"/>
-  
-</head>
-<body>
-  <div class="header">
-    <h1>Claude Code Usage Monitor</h1>
-  </div>
-  
-  <div class="stats-container">
-    
-    <div class="stat-card">
-      <div class="stat-label" id="block-label">Current Block</div>
-      <div class="stat-value" id="block-usage">-</div>
-      <div class="token-details" id="token-details">-</div>
-      <div class="progress-bar">
-        <div class="progress-fill" id="block-progress"></div>
-      </div>
-      <div class="model-info">
-        <span id="block-time">-</span>
-      </div>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Claude Code Usage Monitor</title>
+    <link rel="stylesheet" href="styles.css" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'" />
+    <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self'" />
+  </head>
+  <body>
+    <div class="header">
+      <h1>Claude Code Usage Monitor</h1>
     </div>
-    
-    <div class="stat-card">
-      <div class="stat-label">Max Tokens per Block</div>
-      <div class="token-input-group">
-        <input type="number" id="max-tokens" min="1000" max="1000000">
-        <button id="save-max-tokens">Save</button>
-      </div>
-      <div class="model-info">
-        <span>Limit for 5-hour blocks</span>
-      </div>
-    </div>
-    
-  </div>
-  
-  <div class="refresh-time" id="last-update">
-    Last updated: -
-  </div>
 
-  <script src="renderer.js"></script>
-</body>
+    <div class="stats-container">
+      <div class="stat-card">
+        <div class="stat-label" id="block-label">Current Block</div>
+        <div class="stat-value" id="block-usage">-</div>
+        <div class="token-details" id="token-details">-</div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="block-progress"></div>
+        </div>
+        <div class="model-info">
+          <span id="block-time">-</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Max Tokens per Block</div>
+        <div class="token-input-group">
+          <input type="number" id="max-tokens" min="1000" max="1000000" />
+          <button id="save-max-tokens">Save</button>
+        </div>
+        <div class="model-info">
+          <span>Limit for 5-hour blocks</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="refresh-time" id="last-update">Last updated: -</div>
+
+    <script src="renderer.js"></script>
+  </body>
 </html>
