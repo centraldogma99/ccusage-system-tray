@@ -1,9 +1,35 @@
 # Claude Code Usage Monitor for macOS
 
 Claude Code의 토큰 사용량을 macOS 메뉴바에 실시간으로 표시하는 앱입니다.
+
+5시간마다 Claude 사용량이 초기화되는데, 현재 시간 단위(예: 14시 ~ 19시)에 얼마나 사용했는지를 간편하게 확인할 수 있습니다.
+
+퍼센티지를 표기하기 위한 최대 사용량의 기본값은 88,000 토큰(MAX x5 플랜 기준)이며 직접 수정할 수 있습니다.
+
+[이 블로그](https://hostbor.com/claude-ai-max-plan-explained/)에 따르면 토큰 제한은 이렇다는데 믿거나 말거나 입니다.
+- Pro 플랜: 약 44,000 토큰
+- Max 5x Pro ($100/월): 약 88,000 토큰
+- Max 20x Pro ($200/월): 약 220,000 토큰
+
+## 시스템 트레이
 <img width="232" height="24" alt="스크린샷 2025-08-01 오후 5 50 28" src="https://github.com/user-attachments/assets/83f8db90-1f5b-4e19-ac10-a87255f14352" />
+
+
+## 자세히 보기
 <img width="401" height="600" alt="스크린샷 2025-08-01 오후 5 50 36" src="https://github.com/user-attachments/assets/832eb79b-0965-412e-a5e4-c6560949c608" />
 
+## 빌드 및 설치
+이 프로그램을 사용하려면 시스템에 [bun](https://bun.com/)이 설치되어 있어야 합니다. 설치되어 있지 않다면 다음 명령어로 설치하세요:
+```bash
+curl -fsSL https://bun.sh/install
+```
+
+프로젝트 루트에서 다음 명령어로 소스를 빌드하세요:
+```bash
+npm run build
+```
+
+dist 디렉토리에 생성된 `Claude Code Usage Monitor-x.x.x-arm64.dmg` 파일을 열고 설치하면 끝입니다.
 
 
 ## 기능
@@ -12,15 +38,7 @@ Claude Code의 토큰 사용량을 macOS 메뉴바에 실시간으로 표시하�
 - **세부 정보 창**: 클릭하면 자세한 사용량 정보를 확인할 수 있는 창이 열림
 - **자동 새로고침**: 5초마다 자동으로 사용량 데이터를 업데이트
 
-## 요구사항
-
-- macOS
-- Node.js 20.19.4 이상
-- Claude Code가 설치되어 있어야 함
-- `ccusage` 라이브러리가 동작할 수 있는 환경 (Claude Code 사용 기록이 있어야 함)
-
 ## 설치 및 실행
-
 
 1. 의존성 설치:
 ```bash
@@ -48,41 +66,6 @@ npm run build
    - 현재 세션 토큰 사용량 및 비용
    - 오늘의 총 사용량
    - 사용 중인 모델별 상세 정보
-
-## 화면 구성
-
-- **메뉴바**: `478.4k | $0.44` 형태로 토큰 수와 비용을 표시
-- **상세 창**:
-  - Current Session: 현재 세션의 토큰 사용량과 진행률
-  - Daily Usage: 오늘의 총 사용량
-  - Active Models: 사용 중인 Claude 모델들의 개별 통계
-
-## 기술 스택
-
-- **Electron**: 크로스 플랫폼 데스크톱 앱 프레임워크
-- **ccusage**: Claude Code 사용량 분석 라이브러리
-- **Node.js**: 백엔드 로직
-
-## 개발
-
-개발 모드에서 실행:
-```bash
-npm run dev
-```
-
-앱 패키징:
-```bash
-npm run pack    # 디렉토리로 패키징
-npm run build   # DMG 파일 생성
-```
-
-## 라이선스
-
-MIT License
-
-## 기여
-
-이슈나 PR을 환영합니다!
 
 ## 참고
 
