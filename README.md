@@ -1,14 +1,16 @@
 # Claude Code Usage Monitor for macOS
 
 Claude Code의 토큰 사용량을 macOS 메뉴바에 실시간으로 표시하는 앱입니다.
+<img width="232" height="24" alt="스크린샷 2025-08-01 오후 5 50 28" src="https://github.com/user-attachments/assets/83f8db90-1f5b-4e19-ac10-a87255f14352" />
+<img width="401" height="600" alt="스크린샷 2025-08-01 오후 5 50 36" src="https://github.com/user-attachments/assets/832eb79b-0965-412e-a5e4-c6560949c608" />
+
+
 
 ## 기능
 
 - **실시간 토큰 사용량 표시**: 메뉴바에 현재 세션의 토큰 사용량과 비용을 표시
 - **세부 정보 창**: 클릭하면 자세한 사용량 정보를 확인할 수 있는 창이 열림
 - **자동 새로고침**: 5초마다 자동으로 사용량 데이터를 업데이트
-- **모델별 사용량**: Opus, Sonnet 등 모델별 토큰 사용량 표시
-- **일일 사용량**: 오늘의 총 사용량 정보 제공
 
 ## 요구사항
 
