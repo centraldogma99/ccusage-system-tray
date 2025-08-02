@@ -3,7 +3,7 @@ import * as path from 'path';
 import { execFile } from 'child_process';
 import { getBunEnvironment, getCcusageCommand } from './utils';
 import { BlockData, UsageUpdateData } from './types';
-import { DEFAULT_MAX_TOKEN_LIMIT } from './constants';
+import { DEFAULT_MAX_TOKEN_LIMIT, UPDATE_INTERVAL, calculateTokenUsage } from './constants';
 
 let tray: Tray | null = null;
 let window: BrowserWindow | null = null;
@@ -115,6 +115,8 @@ const createWindow = (): void => {
   window.loadFile(path.join(__dirname, 'renderer.html'));
 
   window.webContents.once('did-finish-load', () => {
+    // 개발자 도구 열기
+    window!.webContents.openDevTools({ mode: 'detach' });
     updateUsageData();
   });
 
@@ -142,18 +144,23 @@ const updateUsageData = (): void => {
     executeCcusageCommand(`blocks -t ${maxTokenLimit} --active --json`, env) as Promise<BlockData>,
   ])
     .then(([blockData]) => {
-      const currentBlock = blockData.blocks[0];
-      const currentBlockUsage =
-        currentBlock.tokenCounts.inputTokens + currentBlock.tokenCounts.outputTokens;
-      const blockUsagePercent = ((currentBlockUsage / maxTokenLimit) * 100).toFixed(1);
-
-      updateTrayTitle(`${(currentBlockUsage / 1000).toFixed(1)}k | ${blockUsagePercent}%`);
+      const currentBlock = blockData.blocks.length === 0 ? undefined : blockData.blocks[0];
+      if (currentBlock) {
+        const usage = calculateTokenUsage(
+          currentBlock.tokenCounts.inputTokens,
+          currentBlock.tokenCounts.outputTokens,
+          maxTokenLimit
+        );
+        updateTrayTitle(`${usage.kTokens}k | ${usage.percentage}%`);
+      } else {
+        updateTrayTitle('0k | 0%');
+      }
 
       if (window) {
         const updateData: UsageUpdateData = {
-          currentBlock: currentBlock,
-          blockUsagePercent: blockUsagePercent,
+          currentBlock,
           error: undefined,
+          maxTokenLimit, // IPC를 통해 현재 설정값 전달
         };
         window.webContents.send('usage-update', updateData);
       }
@@ -196,7 +203,7 @@ app.whenReady().then(() => {
   try {
     createTray();
     updateUsageData();
-    setInterval(updateUsageData, 60000);
+    setInterval(updateUsageData, UPDATE_INTERVAL);
   } catch (error) {
     console.error('Error in app.whenReady:', error);
   }
