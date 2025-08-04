@@ -64,7 +64,8 @@
         "provider": "github",
         "owner": "centraldogma99",
         "repo": "claude-usage-macos",
-        "releaseType": "draft"
+        "releaseType": "draft",
+        "publishAutoUpdate": false
       }
     ]
   }
