@@ -33,10 +33,10 @@ Default is set to 88,000 tokens (Max 5x plan). Adjustable based on your plan:
 
 ### Method 1: Download from GitHub Releases (Recommended)
 1. Visit the [Releases page](https://github.com/centraldogma99/claude-usage-macos/releases) for the latest version
-2. Download the appropriate file for your Mac:
-   - Apple Silicon (M1/M2/M3): `Claude-Code-Usage-Monitor-x.x.x-arm64.dmg`
-   - Intel Mac: `Claude-Code-Usage-Monitor-x.x.x-x64.dmg`
+2. Download the Apple Silicon Mac file: `Claude-Code-Usage-Monitor-x.x.x-arm64.dmg`
 3. Open the DMG file and drag the app to your Applications folder
+
+> **Note**: Currently only supports Apple Silicon (M1/M2/M3) Macs.
 
 ### Method 2: Build from Source
 Build from the project root:
