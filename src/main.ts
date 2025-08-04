@@ -1,7 +1,7 @@
 import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, IpcMainEvent } from 'electron';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { execFile } from 'child_process';
+import { exec } from 'child_process';
 import { getBunEnvironment, getCcusageCommand } from './utils.js';
 import { BlockData, UsageUpdateData } from './types.js';
 import { DEFAULT_MAX_TOKEN_LIMIT, UPDATE_INTERVAL, calculateTokenUsage } from './constants.js';
@@ -16,13 +16,9 @@ let maxTokenLimit: number = DEFAULT_MAX_TOKEN_LIMIT;
 const executeCcusageCommand = (subCommand: string, env: NodeJS.ProcessEnv): Promise<any> => {
   return new Promise((resolve, reject) => {
     const fullCommand = getCcusageCommand(subCommand);
-    const parts = fullCommand.split(' ');
-    const cmd = parts[0];
-    const args = parts.slice(1);
 
-    execFile(
-      cmd,
-      args,
+    exec(
+      fullCommand,
       {
         env,
         maxBuffer: 10 * 1024 * 1024,
