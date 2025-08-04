@@ -1,6 +1,6 @@
 {
   "name": "claude-code-usage-monitor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "description": "Claude Code Usage Monitor",
   "main": "dist/main.js",
@@ -53,7 +53,9 @@
       "category": "public.app-category.productivity",
       "target": {
         "target": "dmg",
-        "arch": ["arm64"]
+        "arch": [
+          "arm64"
+        ]
       },
       "icon": "src/assets/icon.png",
       "identity": null,
