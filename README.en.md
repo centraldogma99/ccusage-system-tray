@@ -31,17 +31,21 @@ Default is set to 88,000 tokens (Max 5x plan). Adjustable based on your plan:
 
 ## Installation
 
-### Quick Install (DMG File)
+### Method 1: Download from GitHub Releases (Recommended)
+1. Visit the [Releases page](https://github.com/centraldogma99/claude-usage-macos/releases) for the latest version
+2. Download the appropriate file for your Mac:
+   - Apple Silicon (M1/M2/M3): `Claude-Code-Usage-Monitor-x.x.x-arm64.dmg`
+   - Intel Mac: `Claude-Code-Usage-Monitor-x.x.x-x64.dmg`
+3. Open the DMG file and drag the app to your Applications folder
 
-1. Clone and build the project:
+### Method 2: Build from Source
+Build from the project root:
 ```bash
-git clone https://github.com/your-username/claude-usage-macos.git
-cd claude-usage-macos
 npm install
 npm run build
 ```
 
-2. Open and install the generated `Claude Code Usage Monitor-x.x.x-arm64.dmg` file from the `dist` folder.
+Open and install the generated DMG file from the `dist` folder.
 
 ### Development Setup
 

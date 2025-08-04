@@ -28,13 +28,23 @@ macOS 메뉴바에서 Claude Code의 토큰 사용량을 실시간으로 모니�
 ## 자세히 보기
 <img width="401" height="600" alt="스크린샷 2025-08-01 오후 5 50 36" src="https://github.com/user-attachments/assets/832eb79b-0965-412e-a5e4-c6560949c608" />
 
-## 빌드 및 설치
+## 설치 방법
+
+### 방법 1: GitHub Releases에서 다운로드 (권장)
+1. [Releases 페이지](https://github.com/centraldogma99/claude-usage-macos/releases)에서 최신 버전 확인
+2. 사용 중인 Mac에 맞는 파일 다운로드:
+   - Apple Silicon (M1/M2/M3): `Claude-Code-Usage-Monitor-x.x.x-arm64.dmg`
+   - Intel Mac: `Claude-Code-Usage-Monitor-x.x.x-x64.dmg`
+3. DMG 파일을 열고 앱을 Applications 폴더로 드래그
+
+### 방법 2: 소스 코드에서 빌드
 프로젝트 루트에서 다음 명령어로 소스를 빌드하세요:
 ```bash
+npm install
 npm run build
 ```
 
-dist 디렉토리에 생성된 `Claude Code Usage Monitor-x.x.x-arm64.dmg` 파일을 열고 설치하면 끝입니다.
+dist 디렉토리에 생성된 DMG 파일을 열고 설치하면 끝입니다.
 
 
 ## 기능
