@@ -40,6 +40,6 @@ export interface BlockData {
 
 export interface UsageUpdateData {
   currentBlock?: Block;
-  blockUsagePercent?: string;
   error?: string;
+  maxTokenLimit?: number;
 }
