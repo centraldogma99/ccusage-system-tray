@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { exec } from 'child_process';
 import { getBunEnvironment, getCcusageCommand } from './utils.js';
 import { BlockData, UsageUpdateData } from './types.js';
-import { DEFAULT_MAX_TOKEN_LIMIT, UPDATE_INTERVAL, calculateTokenUsage } from './constants.js';
+import { DEFAULT_MAX_TOKEN_LIMIT, UPDATE_INTERVAL } from './constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,10 +66,10 @@ const createTray = (): void => {
       click: () => {
         if (window) {
           window.show();
+          updateUsageData();
         } else {
           createWindow();
         }
-        setTimeout(() => updateUsageData(), 100);
       },
     },
     {
@@ -133,62 +133,57 @@ const createWindow = (): void => {
 };
 
 const updateTrayTitle = (text: string): void => {
-  if (tray) {
-    tray.setTitle(text);
-  }
+  tray?.setTitle(text);
 };
 
-const updateUsageData = (): void => {
+const getTrayText = (usage: { tokensUsed: number; tokenLimit: number }): string => {
+  const { tokensUsed, tokenLimit } = usage;
+  const percentage = ((tokensUsed / tokenLimit) * 100).toFixed(1);
+  const kTokens = (tokensUsed / 1000).toFixed(1);
+  return `${kTokens}k | ${percentage}%`;
+};
+
+const updateUsageData = async (): Promise<void> => {
   const env = getBunEnvironment();
+  try {
+    const blockData = (await executeCcusageCommand(
+      `blocks -t ${maxTokenLimit} --active --json`,
+      env
+    )) as BlockData;
 
-  Promise.all([
-    executeCcusageCommand(`blocks -t ${maxTokenLimit} --active --json`, env) as Promise<BlockData>,
-  ])
-    .then(([blockData]) => {
-      const currentBlock = blockData.blocks.length === 0 ? undefined : blockData.blocks[0];
-      if (currentBlock) {
-        const usage = calculateTokenUsage(
-          currentBlock.tokenCounts.inputTokens,
-          currentBlock.tokenCounts.outputTokens,
-          maxTokenLimit
-        );
-        updateTrayTitle(`${usage.kTokens}k | ${usage.percentage}%`);
-      } else {
-        updateTrayTitle('0k | 0%');
-      }
+    const currentBlock = blockData.blocks.length === 0 ? undefined : blockData.blocks[0];
+    updateTrayTitle(
+      getTrayText({
+        tokensUsed: currentBlock
+          ? currentBlock.tokenCounts.inputTokens + currentBlock.tokenCounts.outputTokens
+          : 0,
+        tokenLimit: maxTokenLimit,
+      })
+    );
 
-      if (window) {
-        const updateData: UsageUpdateData = {
-          currentBlock,
-          error: undefined,
-          maxTokenLimit, // IPC를 통해 현재 설정값 전달
-        };
-        window.webContents.send('usage-update', updateData);
-      }
-    })
-    .catch((error: Error) => {
-      console.error('Error fetching usage data:', error);
-      updateTrayTitle('Error');
+    const updateData: UsageUpdateData = {
+      currentBlock,
+      error: undefined,
+      maxTokenLimit,
+    };
+    window?.webContents.send('usage-update', updateData);
+  } catch (error) {
+    console.error('Error fetching usage data:', error);
+    updateTrayTitle('Error');
+    if (!window || !(error instanceof Error)) return;
 
-      if (window) {
-        const errorMessage = error.message || error.toString();
-        let helpMessage = errorMessage;
+    const errorMessage = error.message || error.toString();
+    let helpMessage = errorMessage;
 
-        if (
-          errorMessage.includes('ccusage') ||
-          errorMessage.includes('command not found') ||
-          errorMessage.includes('ENOENT') ||
-          errorMessage.includes('bunx')
-        ) {
-          helpMessage = `ccusage 실행 중 오류가 발생했습니다.\n\nbun이 설치되어 있는지 확인하세요:\n1. Terminal을 열고 다음 명령어를 실행하세요:\n   bun --version\n\n2. bun이 없다면 설치하세요:\n   curl -fsSL https://bun.sh/install | bash\n\n에러 상세: ${errorMessage}`;
-        }
+    const CCUSAGE_BUN_ERROR_KEYWORDS = ['ccusage', 'command not found', 'ENOENT', 'bunx'];
+    if (CCUSAGE_BUN_ERROR_KEYWORDS.some(errorMessage.includes)) {
+      helpMessage = `ccusage 실행 중 오류가 발생했습니다.\n\nbun이 설치되어 있는지 확인하세요:\n1. Terminal을 열고 다음 명령어를 실행하세요:\n   bun --version\n\n2. bun이 없다면 설치하세요:\n   curl -fsSL https://bun.sh/install | bash\n\n에러 상세: ${errorMessage}`;
+    }
 
-        const updateData: UsageUpdateData = {
-          error: helpMessage,
-        };
-        window.webContents.send('usage-update', updateData);
-      }
-    });
+    window.webContents.send('usage-update', {
+      error: helpMessage,
+    } satisfies UsageUpdateData);
+  }
 };
 
 ipcMain.on('max-tokens-update', (_event: IpcMainEvent, newMaxTokens: number) => {
@@ -210,6 +205,7 @@ app.whenReady().then(() => {
   }
 });
 
+// 창 닫아도 앱 종료되는 것 방지(트레이에서 계속 실행)
 app.on('window-all-closed', (event: Event) => {
   event.preventDefault();
 });
