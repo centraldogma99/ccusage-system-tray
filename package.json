@@ -59,6 +59,9 @@
       "identity": null,
       "type": "development"
     },
+    "dmg": {
+      "writeUpdateInfo": false
+    },
     "publish": [
       {
         "provider": "github",
