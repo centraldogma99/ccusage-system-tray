@@ -1,9 +1,13 @@
 import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, IpcMainEvent } from 'electron';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 import { execFile } from 'child_process';
-import { getBunEnvironment, getCcusageCommand } from './utils';
-import { BlockData, UsageUpdateData } from './types';
-import { DEFAULT_MAX_TOKEN_LIMIT, UPDATE_INTERVAL, calculateTokenUsage } from './constants';
+import { getBunEnvironment, getCcusageCommand } from './utils.js';
+import { BlockData, UsageUpdateData } from './types.js';
+import { DEFAULT_MAX_TOKEN_LIMIT, UPDATE_INTERVAL, calculateTokenUsage } from './constants.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 let tray: Tray | null = null;
 let window: BrowserWindow | null = null;
@@ -107,8 +111,9 @@ const createWindow = (): void => {
     resizable: false,
     icon: path.join(__dirname, 'assets', 'icon.png'),
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      preload: path.join(__dirname, 'preload.cjs'),
+      nodeIntegration: false,
+      contextIsolation: true,
     },
   });
 
@@ -116,7 +121,7 @@ const createWindow = (): void => {
 
   window.webContents.once('did-finish-load', () => {
     // 개발자 도구 열기
-    window!.webContents.openDevTools({ mode: 'detach' });
+    // window!.webContents.openDevTools({ mode: 'detach' });
     updateUsageData();
   });
 

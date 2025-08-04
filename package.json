@@ -1,6 +1,7 @@
 {
   "name": "claude-code-usage-monitor",
   "version": "1.0.0",
+  "type": "module",
   "description": "Claude Code Usage Monitor",
   "main": "dist/main.js",
   "scripts": {

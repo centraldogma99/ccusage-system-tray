@@ -1,6 +1,6 @@
-const { ipcRenderer } = require('electron');
-import { DEFAULT_MAX_TOKEN_LIMIT, calculateTokenUsage } from './constants';
-import type { UsageUpdateData } from './types';
+import { DEFAULT_MAX_TOKEN_LIMIT, calculateTokenUsage } from './constants.js';
+import type { UsageUpdateData } from './types.js';
+import './global.js';
 
 const updateDisplay = (data: UsageUpdateData): void => {
   if (!data) return;
@@ -65,7 +65,7 @@ const updateDisplay = (data: UsageUpdateData): void => {
   }
 };
 
-ipcRenderer.on('usage-update', (_event: any, data: UsageUpdateData) => {
+window.api.onUsageUpdate((data: UsageUpdateData) => {
   if (data.error) {
     document.body.innerHTML = `
       <div style="padding: 20px;">
@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (maxTokensInput) {
         const maxTokens = maxTokensInput.value;
         localStorage.setItem('maxTokens', maxTokens);
-        ipcRenderer.send('max-tokens-update', parseInt(maxTokens));
+        window.api.sendMaxTokensUpdate(parseInt(maxTokens));
 
         const originalText = saveButton.textContent || '';
         saveButton.textContent = 'Saved!';
@@ -110,5 +110,5 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const maxTokens = localStorage.getItem('maxTokens') || DEFAULT_MAX_TOKEN_LIMIT.toString();
-  ipcRenderer.send('max-tokens-update', parseInt(maxTokens));
+  window.api.sendMaxTokensUpdate(parseInt(maxTokens));
 });
