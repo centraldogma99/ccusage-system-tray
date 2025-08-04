@@ -37,8 +37,7 @@ git push origin --tags
 
 ## 빌드 아티팩트
 
-릴리스 시 다음 파일들이 자동으로 생성됩니다:
-- `Claude-Code-Usage-Monitor-{version}-arm64.dmg` - Apple Silicon용
-- `Claude-Code-Usage-Monitor-{version}-x64.dmg` - Intel Mac용
-- `Claude-Code-Usage-Monitor-{version}-arm64-mac.zip` - Apple Silicon용 ZIP
-- `Claude-Code-Usage-Monitor-{version}-x64-mac.zip` - Intel Mac용 ZIP
+릴리스 시 다음 파일이 자동으로 생성됩니다:
+- `Claude-Code-Usage-Monitor-{version}-arm64.dmg` - Apple Silicon용 DMG
+
+> **참고**: 현재 Apple Silicon (M1/M2/M3) Mac만 지원합니다.

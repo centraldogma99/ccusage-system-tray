@@ -32,10 +32,10 @@ macOS 메뉴바에서 Claude Code의 토큰 사용량을 실시간으로 모니�
 
 ### 방법 1: GitHub Releases에서 다운로드 (권장)
 1. [Releases 페이지](https://github.com/centraldogma99/claude-usage-macos/releases)에서 최신 버전 확인
-2. 사용 중인 Mac에 맞는 파일 다운로드:
-   - Apple Silicon (M1/M2/M3): `Claude-Code-Usage-Monitor-x.x.x-arm64.dmg`
-   - Intel Mac: `Claude-Code-Usage-Monitor-x.x.x-x64.dmg`
+2. Apple Silicon Mac용 파일 다운로드: `Claude-Code-Usage-Monitor-x.x.x-arm64.dmg`
 3. DMG 파일을 열고 앱을 Applications 폴더로 드래그
+
+> **참고**: 현재 Apple Silicon (M1/M2/M3) Mac만 지원합니다.
 
 ### 방법 2: 소스 코드에서 빌드
 프로젝트 루트에서 다음 명령어로 소스를 빌드하세요:
