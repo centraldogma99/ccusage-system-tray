@@ -6,6 +6,9 @@ on:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: write  # 릴리스 생성 권한 추가
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
