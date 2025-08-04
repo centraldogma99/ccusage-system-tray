@@ -45,7 +45,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-artifacts-${{ matrix.os }}
-          path: |
-            dist/*.dmg
-            dist/*.blockmap
+          path: dist/*.dmg
           if-no-files-found: error
