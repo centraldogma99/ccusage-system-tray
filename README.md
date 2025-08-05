@@ -13,24 +13,38 @@ macOS 메뉴바에서 Claude Code의 토큰 사용량을 실시간으로 모니�
 
 기본값은 88,000 토큰(Max 5x 플랜 기준)으로 설정되어 있으며, 플랜에 따라 조정 가능합니다:
 
-| 플랜 | 월 요금 | 예상 토큰 제한* |
-|------|---------|----------------|
-| Pro | $20/월 | ~44,000 토큰 |
-| Max 5x | $100/월 | ~88,000 토큰 |
-| Max 20x | $200/월 | ~220,000 토큰 |
+| 플랜    | 월 요금 | 예상 토큰 제한\* |
+| ------- | ------- | ---------------- |
+| Pro     | $20/월  | ~44,000 토큰     |
+| Max 5x  | $100/월 | ~88,000 토큰     |
+| Max 20x | $200/월 | ~220,000 토큰    |
 
-*참고: [출처](https://hostbor.com/claude-ai-max-plan-explained/) (비공식 추정치)
+\*참고: [출처](https://hostbor.com/claude-ai-max-plan-explained/) (비공식 추정치)
 
 ## 시스템 트레이
+
 <img width="232" height="24" alt="스크린샷 2025-08-01 오후 5 50 28" src="https://github.com/user-attachments/assets/83f8db90-1f5b-4e19-ac10-a87255f14352" />
 
-
 ## 자세히 보기
+
 <img width="401" height="600" alt="스크린샷 2025-08-01 오후 5 50 36" src="https://github.com/user-attachments/assets/832eb79b-0965-412e-a5e4-c6560949c608" />
 
 ## 설치 방법
 
+### 사전 요구 사항: Bun 설치
+
+이 앱은 작동하기 위해 Bun이 설치되어 있어야 합니다.
+
+설치 방법은 [bun 문서](https://bun.com/)를 확인하세요.
+
+또는 쉬운 설치를 위해 제공하는 bun_install_script.sh를 활용할 수 있습니다.
+
+```shell
+sh bun_install_script.sh
+```
+
 ### 방법 1: GitHub Releases에서 다운로드 (권장)
+
 1. [Releases 페이지](https://github.com/centraldogma99/claude-usage-macos/releases)에서 최신 버전 확인
 2. Apple Silicon Mac용 파일 다운로드: `Claude-Code-Usage-Monitor-x.x.x-arm64.dmg`
 3. DMG 파일을 열고 앱을 Applications 폴더로 드래그
@@ -38,14 +52,15 @@ macOS 메뉴바에서 Claude Code의 토큰 사용량을 실시간으로 모니�
 > **참고**: 현재 Apple Silicon (M1/M2/M3) Mac만 지원합니다.
 
 ### 방법 2: 소스 코드에서 빌드
+
 프로젝트 루트에서 다음 명령어로 소스를 빌드하세요:
+
 ```bash
 npm install
 npm run build
 ```
 
 dist 디렉토리에 생성된 DMG 파일을 열고 설치하면 끝입니다.
-
 
 ## 기능
 
@@ -56,16 +71,19 @@ dist 디렉토리에 생성된 DMG 파일을 열고 설치하면 끝입니다.
 ## 설치 및 실행
 
 1. 의존성 설치:
+
 ```bash
 npm install
 ```
 
 2. 개발 모드로 실행:
+
 ```bash
 npm run dev
 ```
 
 3. 앱 빌드 (선택사항):
+
 ```bash
 npm run build
 ```
@@ -80,7 +98,6 @@ npm run build
 3. "Show Details"를 선택하면 팝업 창에서 다음 정보를 확인할 수 있습니다:
    - 현재 세션 토큰 사용량 및 비용
    - 오늘의 총 사용량
-   - 사용 중인 모델별 상세 정보
 
 ## 참고
 

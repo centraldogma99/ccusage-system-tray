@@ -31,6 +31,18 @@ Default is set to 88,000 tokens (Max 5x plan). Adjustable based on your plan:
 
 ## Installation
 
+### Prerequisites: Install Bun
+
+This app requires Bun to be installed to work properly.
+
+For installation instructions, please refer to the [Bun documentation](https://bun.com/).
+
+Alternatively, you can use the provided bun_install_script.sh for easy installation:
+
+```shell
+sh bun_install_script.sh
+```
+
 ### Method 1: Download from GitHub Releases (Recommended)
 1. Visit the [Releases page](https://github.com/centraldogma99/claude-usage-macos/releases) for the latest version
 2. Download the Apple Silicon Mac file: `Claude-Code-Usage-Monitor-x.x.x-arm64.dmg`
