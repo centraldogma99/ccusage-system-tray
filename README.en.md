@@ -37,7 +37,9 @@ This app requires Bun to be installed to work properly.
 
 For installation instructions, please refer to the [Bun documentation](https://bun.com/).
 
-Alternatively, you can use the provided bun_install_script.sh for easy installation:
+Alternatively, you can use the provided [bun_install_script.sh](https://github.com/centraldogma99/ccusage-system-tray/blob/main/src/bun_install_script.sh) for easy installation.
+
+Download the script and run it:
 
 ```shell
 sh bun_install_script.sh
