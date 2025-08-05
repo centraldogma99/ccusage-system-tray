@@ -1,5 +1,7 @@
 # Claude Code Usage Monitor for macOS
 
+[English README](https://github.com/centraldogma99/ccusage-system-tray/blob/main/README.en.md)
+
 macOS 메뉴바에서 Claude Code의 토큰 사용량을 실시간으로 모니터링하는 앱입니다.
 
 ## 주요 특징
@@ -37,7 +39,9 @@ macOS 메뉴바에서 Claude Code의 토큰 사용량을 실시간으로 모니�
 
 설치 방법은 [bun 문서](https://bun.com/)를 확인하세요.
 
-또는 쉬운 설치를 위해 제공하는 bun_install_script.sh를 활용할 수 있습니다.
+또는 쉬운 설치를 위해 제공하는 [bun_install_script.sh](https://github.com/centraldogma99/ccusage-system-tray/blob/main/src/bun_install_script.sh)를 활용할 수 있습니다.
+
+스크립트를 다운로드 한 후 다음과 같이 스크립트를 실행하세요.
 
 ```shell
 sh bun_install_script.sh
