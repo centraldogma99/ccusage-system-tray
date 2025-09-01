@@ -12,7 +12,6 @@ let tray: Tray | null = null;
 let window: BrowserWindow | null = null;
 let maxTokenLimit: number = DEFAULT_MAX_TOKEN_LIMIT;
 
-
 const createTray = (): void => {
   const iconPath = path.join(__dirname, 'assets', 'icon@2x.png');
   const trayIcon = nativeImage.createFromPath(iconPath);
