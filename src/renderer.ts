@@ -13,7 +13,7 @@ const updateTrayPreview = (options: TrayDisplayOptions): void => {
   const exampleEndTime = new Date();
   exampleEndTime.setHours(exampleEndTime.getHours() + 2);
   exampleEndTime.setMinutes(exampleEndTime.getMinutes() + 30);
-  
+
   previewEl.textContent = formatTrayText(exampleUsage, exampleLimit, options, exampleEndTime);
 };
 
@@ -53,9 +53,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let trayOptions: TrayDisplayOptions = {
     showTokens: true,
     showPercentage: true,
-    showEndTime: false
+    showEndTime: false,
   };
-  
+
   if (savedOptions) {
     try {
       const parsed = JSON.parse(savedOptions);
@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
       trayOptions = {
         showTokens: parsed.showTokens ?? true,
         showPercentage: parsed.showPercentage ?? true,
-        showEndTime: parsed.showEndTime ?? false
+        showEndTime: parsed.showEndTime ?? false,
       };
     } catch (e) {
       // Use default if parse fails
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const newOptions: TrayDisplayOptions = {
       showTokens: tokensCheckbox?.checked || false,
       showPercentage: percentageCheckbox?.checked || false,
-      showEndTime: endTimeCheckbox?.checked || false
+      showEndTime: endTimeCheckbox?.checked || false,
     };
 
     // Validate at least one option is selected
@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (warningEl) warningEl.style.display = 'none';
-    
+
     localStorage.setItem('trayDisplayOptions', JSON.stringify(newOptions));
     window.api.sendTrayDisplayOptionUpdate(newOptions);
     updateTrayPreview(newOptions);
@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // Add change listeners
-  [tokensCheckbox, percentageCheckbox, endTimeCheckbox].forEach(checkbox => {
+  [tokensCheckbox, percentageCheckbox, endTimeCheckbox].forEach((checkbox) => {
     if (checkbox) {
       checkbox.addEventListener('change', () => {
         const isValid = updateOptions();
