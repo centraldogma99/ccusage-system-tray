@@ -113,3 +113,70 @@ body {
 #save-max-tokens:active {
   transform: translateY(1px);
 }
+
+/* Tray display options styles */
+.tray-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.radio-label:hover {
+  background-color: #f6f8fa;
+  border-color: #c9d1d9;
+}
+
+.radio-label input[type="radio"] {
+  margin-right: 10px;
+  cursor: pointer;
+}
+
+.radio-label input[type="radio"]:checked {
+  accent-color: #3498db;
+}
+
+.radio-label input[type="radio"]:checked + span {
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.radio-label span {
+  color: #586069;
+  user-select: none;
+}
+
+/* Tray preview styles */
+.tray-preview {
+  margin-top: 15px;
+  padding: 12px;
+  background-color: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+}
+
+.preview-label {
+  font-size: 12px;
+  color: #666;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+#tray-preview-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2c3e50;
+  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+}

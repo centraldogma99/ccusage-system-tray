@@ -2,8 +2,9 @@ import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, IpcMainEvent } fr
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { getActiveBlock } from './get_active_block.js';
-import { UsageUpdateData } from './types.js';
+import { UsageUpdateData, TrayDisplayOption } from './types.js';
 import { DEFAULT_MAX_TOKEN_LIMIT, UPDATE_INTERVAL } from './constants.js';
+import { formatTrayText } from './tray-display-utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,6 +12,7 @@ const __dirname = path.dirname(__filename);
 let tray: Tray | null = null;
 let window: BrowserWindow | null = null;
 let maxTokenLimit: number = DEFAULT_MAX_TOKEN_LIMIT;
+let trayDisplayOption: TrayDisplayOption = 'both';
 
 const createTray = (): void => {
   const iconPath = path.join(__dirname, 'assets', 'icon@2x.png');
@@ -25,7 +27,7 @@ const createTray = (): void => {
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Show Details',
+      label: 'Preferences',
       click: () => {
         if (window) {
           window.show();
@@ -100,10 +102,7 @@ const updateTrayTitle = (text: string): void => {
 };
 
 const getTrayText = (usage: { tokensUsed: number; tokenLimit: number }): string => {
-  const { tokensUsed, tokenLimit } = usage;
-  const percentage = ((tokensUsed / tokenLimit) * 100).toFixed(1);
-  const kTokens = (tokensUsed / 1000).toFixed(1);
-  return `${kTokens}k | ${percentage}%`;
+  return formatTrayText(usage.tokensUsed, usage.tokenLimit, trayDisplayOption);
 };
 
 const updateUsageData = async (): Promise<void> => {
@@ -156,6 +155,11 @@ const updateUsageData = async (): Promise<void> => {
 
 ipcMain.on('max-tokens-update', (_event: IpcMainEvent, newMaxTokens: number) => {
   maxTokenLimit = newMaxTokens;
+  updateUsageData();
+});
+
+ipcMain.on('tray-display-option-update', (_event: IpcMainEvent, option: TrayDisplayOption) => {
+  trayDisplayOption = option;
   updateUsageData();
 });
 

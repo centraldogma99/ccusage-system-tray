@@ -9,22 +9,10 @@
   </head>
   <body>
     <div class="header">
-      <h1>Claude Code Usage Monitor</h1>
+      <h1>Preferences</h1>
     </div>
 
     <div class="stats-container">
-      <div class="stat-card">
-        <div class="stat-label" id="block-label">Current Block</div>
-        <div class="stat-value" id="block-usage">-</div>
-        <div class="token-details" id="token-details">-</div>
-        <div class="progress-bar">
-          <div class="progress-fill" id="block-progress"></div>
-        </div>
-        <div class="model-info">
-          <span id="block-time">-</span>
-        </div>
-      </div>
-
       <div class="stat-card">
         <div class="stat-label">Max Tokens per Block</div>
         <div class="token-input-group">
@@ -35,9 +23,29 @@
           <span>Limit for 5-hour blocks</span>
         </div>
       </div>
-    </div>
 
-    <div class="refresh-time" id="last-update">Last updated: -</div>
+      <div class="stat-card">
+        <div class="stat-label">Tray Display Options</div>
+        <div class="tray-options">
+          <label class="radio-label">
+            <input type="radio" name="tray-display" value="both" id="tray-both" checked />
+            <span>Both (Tokens & Percentage)</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="tray-display" value="tokens" id="tray-tokens" />
+            <span>Tokens Only</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="tray-display" value="compact" id="tray-compact" />
+            <span>Compact (% only)</span>
+          </label>
+        </div>
+        <div class="tray-preview">
+          <div class="preview-label">Preview:</div>
+          <div class="preview-text" id="tray-preview-text">50K / 100K (50%)</div>
+        </div>
+      </div>
+    </div>
 
     <script type="module" src="renderer.js"></script>
   </body>
