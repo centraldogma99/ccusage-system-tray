@@ -1,10 +1,10 @@
-import type { TrayDisplayOption } from './types.js';
+import type { TrayDisplayOptions } from './types.js';
 
 declare global {
   interface Window {
     api: {
       sendMaxTokensUpdate: (maxTokens: number) => void;
-      sendTrayDisplayOptionUpdate: (option: TrayDisplayOption) => void;
+      sendTrayDisplayOptionUpdate: (options: TrayDisplayOptions) => void;
       removeAllListeners: (channel: string) => void;
     };
   }

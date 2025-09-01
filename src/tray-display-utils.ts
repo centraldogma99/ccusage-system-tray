@@ -1,20 +1,29 @@
-import type { TrayDisplayOption } from './types.js';
+import type { TrayDisplayOptions } from './types.js';
 
 export const formatTrayText = (
   tokensUsed: number,
   tokenLimit: number,
-  option: TrayDisplayOption
+  options: TrayDisplayOptions,
+  endTime: Date
 ): string => {
   const percentage = ((tokensUsed / tokenLimit) * 100).toFixed(1);
   const kTokens = (tokensUsed / 1000).toFixed(1);
 
-  switch (option) {
-    case 'tokens':
-      return `${kTokens}K`;
-    case 'percentage':
-      return `${percentage}%`;
-    case 'both':
-    default:
-      return `${kTokens}K | ${percentage}%`;
+  const parts: string[] = [];
+
+  if (options.showTokens) {
+    parts.push(`${kTokens}K`);
   }
+
+  if (options.showPercentage) {
+    parts.push(`${percentage}%`);
+  }
+
+  if (options.showEndTime) {
+    const hours = endTime.getHours().toString().padStart(2, '0');
+    const minutes = endTime.getMinutes().toString().padStart(2, '0');
+    parts.push(`~${hours}:${minutes}`);
+  }
+
+  return parts.join(' | ');
 };

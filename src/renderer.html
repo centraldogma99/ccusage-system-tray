@@ -27,22 +27,25 @@
       <div class="stat-card">
         <div class="stat-label">Tray Display Options</div>
         <div class="tray-options">
-          <label class="radio-label">
-            <input type="radio" name="tray-display" value="both" id="tray-both" checked />
-            <span>Both (Tokens & Percentage)</span>
+          <label class="checkbox-label">
+            <input type="checkbox" name="tray-display" value="tokens" id="tray-tokens" checked />
+            <span>Tokens</span>
           </label>
-          <label class="radio-label">
-            <input type="radio" name="tray-display" value="tokens" id="tray-tokens" />
-            <span>Tokens Only</span>
+          <label class="checkbox-label">
+            <input type="checkbox" name="tray-display" value="percentage" id="tray-percentage" checked />
+            <span>Percentage</span>
           </label>
-          <label class="radio-label">
-            <input type="radio" name="tray-display" value="percentage" id="tray-percentage" />
-            <span>% only</span>
+          <label class="checkbox-label">
+            <input type="checkbox" name="tray-display" value="endTime" id="tray-endTime" />
+            <span>Block End Time</span>
           </label>
+        </div>
+        <div class="model-info" id="tray-warning" style="color: #e74c3c; display: none;">
+          <span>At least one option must be selected</span>
         </div>
         <div class="tray-preview">
           <div class="preview-label">Preview:</div>
-          <div class="preview-text" id="tray-preview-text">50K / 100K (50%)</div>
+          <div class="preview-text" id="tray-preview-text">50.0K | 50.0%</div>
         </div>
       </div>
     </div>

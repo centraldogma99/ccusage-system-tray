@@ -2,7 +2,7 @@ import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, IpcMainEvent } fr
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { getActiveBlock } from './get_active_block.js';
-import { UsageUpdateData, TrayDisplayOption } from './types.js';
+import { UsageUpdateData, TrayDisplayOptions } from './types.js';
 import { DEFAULT_MAX_TOKEN_LIMIT, UPDATE_INTERVAL } from './constants.js';
 import { formatTrayText } from './tray-display-utils.js';
 
@@ -12,7 +12,12 @@ const __dirname = path.dirname(__filename);
 let tray: Tray | null = null;
 let window: BrowserWindow | null = null;
 let maxTokenLimit: number = DEFAULT_MAX_TOKEN_LIMIT;
-let trayDisplayOption: TrayDisplayOption = 'both';
+let trayDisplayOptions: TrayDisplayOptions = {
+  showTokens: true,
+  showPercentage: true,
+  showEndTime: false,
+};
+let currentEndTime: Date | undefined;
 
 const createTray = (): void => {
   const iconPath = path.join(__dirname, 'assets', 'icon@2x.png');
@@ -101,8 +106,8 @@ const updateTrayTitle = (text: string): void => {
   tray?.setTitle(text);
 };
 
-const getTrayText = (usage: { tokensUsed: number; tokenLimit: number }): string => {
-  return formatTrayText(usage.tokensUsed, usage.tokenLimit, trayDisplayOption);
+const getTrayText = (data: { tokensUsed: number; tokenLimit: number; endTime: Date }): string => {
+  return formatTrayText(data.tokensUsed, data.tokenLimit, trayDisplayOptions, data.endTime);
 };
 
 const updateUsageData = async (): Promise<void> => {
@@ -122,10 +127,14 @@ const updateUsageData = async (): Promise<void> => {
 
     const tokensUsed = activeBlock.tokenCounts.inputTokens + activeBlock.tokenCounts.outputTokens;
 
+    // endTime을 Date 객체로 변환
+    currentEndTime = new Date(activeBlock.endTime);
+
     updateTrayTitle(
       getTrayText({
         tokensUsed,
         tokenLimit: maxTokenLimit,
+        endTime: currentEndTime,
       })
     );
 
@@ -158,8 +167,8 @@ ipcMain.on('max-tokens-update', (_event: IpcMainEvent, newMaxTokens: number) => 
   updateUsageData();
 });
 
-ipcMain.on('tray-display-option-update', (_event: IpcMainEvent, option: TrayDisplayOption) => {
-  trayDisplayOption = option;
+ipcMain.on('tray-display-option-update', (_event: IpcMainEvent, options: TrayDisplayOptions) => {
+  trayDisplayOptions = options;
   updateUsageData();
 });
 

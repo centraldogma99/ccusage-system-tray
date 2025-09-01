@@ -6,4 +6,8 @@ export interface UsageUpdateData {
   maxTokenLimit?: number;
 }
 
-export type TrayDisplayOption = 'both' | 'tokens' | 'percentage';
+export interface TrayDisplayOptions {
+  showTokens: boolean;
+  showPercentage: boolean;
+  showEndTime: boolean;
+}
