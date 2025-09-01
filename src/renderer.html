@@ -9,22 +9,10 @@
   </head>
   <body>
     <div class="header">
-      <h1>Claude Code Usage Monitor</h1>
+      <h1>Preferences</h1>
     </div>
 
     <div class="stats-container">
-      <div class="stat-card">
-        <div class="stat-label" id="block-label">Current Block</div>
-        <div class="stat-value" id="block-usage">-</div>
-        <div class="token-details" id="token-details">-</div>
-        <div class="progress-bar">
-          <div class="progress-fill" id="block-progress"></div>
-        </div>
-        <div class="model-info">
-          <span id="block-time">-</span>
-        </div>
-      </div>
-
       <div class="stat-card">
         <div class="stat-label">Max Tokens per Block</div>
         <div class="token-input-group">
@@ -35,9 +23,38 @@
           <span>Limit for 5-hour blocks</span>
         </div>
       </div>
-    </div>
 
-    <div class="refresh-time" id="last-update">Last updated: -</div>
+      <div class="stat-card">
+        <div class="stat-label">Tray Display Options</div>
+        <div class="tray-options">
+          <label class="checkbox-label">
+            <input type="checkbox" name="tray-display" value="tokens" id="tray-tokens" checked />
+            <span>Tokens</span>
+          </label>
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              name="tray-display"
+              value="percentage"
+              id="tray-percentage"
+              checked
+            />
+            <span>Percentage</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" name="tray-display" value="endTime" id="tray-endTime" />
+            <span>Block End Time</span>
+          </label>
+        </div>
+        <div class="model-info" id="tray-warning" style="color: #e74c3c; display: none">
+          <span>At least one option must be selected</span>
+        </div>
+        <div class="tray-preview">
+          <div class="preview-label">Preview:</div>
+          <div class="preview-text" id="tray-preview-text">50.0K | 50.0%</div>
+        </div>
+      </div>
+    </div>
 
     <script type="module" src="renderer.js"></script>
   </body>

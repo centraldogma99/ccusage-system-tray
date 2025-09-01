@@ -5,3 +5,9 @@ export interface UsageUpdateData {
   error?: string;
   maxTokenLimit?: number;
 }
+
+export interface TrayDisplayOptions {
+  showTokens: boolean;
+  showPercentage: boolean;
+  showEndTime: boolean;
+}

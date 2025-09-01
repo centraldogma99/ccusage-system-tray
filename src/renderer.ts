@@ -1,91 +1,21 @@
-import { DEFAULT_MAX_TOKEN_LIMIT, calculateTokenUsage } from './constants.js';
-import type { UsageUpdateData } from './types.js';
+import { DEFAULT_MAX_TOKEN_LIMIT } from './constants.js';
+import type { TrayDisplayOptions } from './types.js';
+import { formatTrayText } from './tray-display-utils.js';
 import './global.js';
 
-const updateDisplay = (data: UsageUpdateData): void => {
-  if (!data) return;
+const updateTrayPreview = (options: TrayDisplayOptions): void => {
+  const previewEl = document.getElementById('tray-preview-text');
+  if (!previewEl) return;
 
-  const activeBlock = data.activeBlock;
-  const blockUsageEl = document.getElementById('block-usage');
-  const blockProgressEl = document.getElementById('block-progress') as HTMLElement;
-  const blockLabelEl = document.getElementById('block-label');
-  const tokenDetailsEl = document.getElementById('token-details');
+  const exampleUsage = 50000;
+  const exampleLimit = 100000;
+  // 예시 종료 시간: 현재 시간에서 2시간 30분 후
+  const exampleEndTime = new Date();
+  exampleEndTime.setHours(exampleEndTime.getHours() + 2);
+  exampleEndTime.setMinutes(exampleEndTime.getMinutes() + 30);
 
-  const usage = calculateTokenUsage(
-    activeBlock?.tokenCounts.inputTokens || 0,
-    activeBlock?.tokenCounts.outputTokens || 0,
-    data.maxTokenLimit || DEFAULT_MAX_TOKEN_LIMIT
-  );
-
-  if (blockUsageEl) blockUsageEl.textContent = `${usage.percentage}%`;
-  if (blockProgressEl) blockProgressEl.style.width = `${usage.percentage}%`;
-
-  // Display token details
-  if (tokenDetailsEl && activeBlock?.tokenCounts) {
-    const inputTokens = activeBlock.tokenCounts.inputTokens || 0;
-    const outputTokens = activeBlock.tokenCounts.outputTokens || 0;
-    const totalTokens = inputTokens + outputTokens;
-    tokenDetailsEl.textContent = `Input: ${inputTokens.toLocaleString()} | Output: ${outputTokens.toLocaleString()} | Total: ${totalTokens.toLocaleString()}`;
-  }
-
-  if (!activeBlock) {
-    if (blockLabelEl) blockLabelEl.textContent = 'No active block';
-    if (document.getElementById('block-time')) {
-      document.getElementById('block-time')!.textContent = 'N/A';
-    }
-    return;
-  }
-
-  const startTime = activeBlock.startTime;
-  const endTime = activeBlock.endTime;
-  const now = new Date();
-  const remaining = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 60000));
-
-  // Update block label with time range
-  if (blockLabelEl) {
-    const startTimeStr = startTime.toLocaleTimeString('ko-KR', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-    const endTimeStr = endTime.toLocaleTimeString('ko-KR', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-    blockLabelEl.textContent = `Current Block (${startTimeStr} - ${endTimeStr})`;
-  }
-
-  const blockTimeEl = document.getElementById('block-time');
-  if (blockTimeEl) {
-    const hours = Math.floor(remaining / 60);
-    const minutes = remaining % 60;
-    if (hours > 0) {
-      blockTimeEl.textContent = `${hours}시간 ${minutes}분 남음`;
-    } else {
-      blockTimeEl.textContent = `${minutes}분 남음`;
-    }
-  }
-
-  const lastUpdateEl = document.getElementById('last-update');
-  if (lastUpdateEl) {
-    lastUpdateEl.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
-  }
+  previewEl.textContent = formatTrayText(exampleUsage, exampleLimit, options, exampleEndTime);
 };
-
-window.api.onUsageUpdate((data: UsageUpdateData) => {
-  if (data.error) {
-    document.body.innerHTML = `
-      <div style="padding: 20px;">
-        <h2 style="color: #e74c3c; text-align: center;">Error</h2>
-        <div style="color: #666; white-space: pre-line; line-height: 1.6; margin-top: 20px;">
-          ${data.error}
-        </div>
-      </div>
-    `;
-    return;
-  }
-
-  updateDisplay(data);
-});
 
 document.addEventListener('DOMContentLoaded', () => {
   const savedMaxTokens = localStorage.getItem('maxTokens');
@@ -117,4 +47,77 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const maxTokens = localStorage.getItem('maxTokens') || DEFAULT_MAX_TOKEN_LIMIT.toString();
   window.api.sendMaxTokensUpdate(parseInt(maxTokens));
+
+  // Tray display option handling
+  const savedOptions = localStorage.getItem('trayDisplayOptions');
+  let trayOptions: TrayDisplayOptions = {
+    showTokens: true,
+    showPercentage: true,
+    showEndTime: false,
+  };
+
+  if (savedOptions) {
+    try {
+      const parsed = JSON.parse(savedOptions);
+      // 기존 설정에 showEndTime이 없으면 기본값 사용
+      trayOptions = {
+        showTokens: parsed.showTokens ?? true,
+        showPercentage: parsed.showPercentage ?? true,
+        showEndTime: parsed.showEndTime ?? false,
+      };
+    } catch (e) {
+      // Use default if parse fails
+    }
+  }
+
+  const tokensCheckbox = document.getElementById('tray-tokens') as HTMLInputElement;
+  const percentageCheckbox = document.getElementById('tray-percentage') as HTMLInputElement;
+  const endTimeCheckbox = document.getElementById('tray-endTime') as HTMLInputElement;
+  const warningEl = document.getElementById('tray-warning');
+
+  // Set initial state
+  if (tokensCheckbox) tokensCheckbox.checked = trayOptions.showTokens;
+  if (percentageCheckbox) percentageCheckbox.checked = trayOptions.showPercentage;
+  if (endTimeCheckbox) endTimeCheckbox.checked = trayOptions.showEndTime;
+
+  const updateOptions = () => {
+    const newOptions: TrayDisplayOptions = {
+      showTokens: tokensCheckbox?.checked || false,
+      showPercentage: percentageCheckbox?.checked || false,
+      showEndTime: endTimeCheckbox?.checked || false,
+    };
+
+    // Validate at least one option is selected
+    if (!newOptions.showTokens && !newOptions.showPercentage && !newOptions.showEndTime) {
+      if (warningEl) warningEl.style.display = 'block';
+      return false;
+    }
+
+    if (warningEl) warningEl.style.display = 'none';
+
+    localStorage.setItem('trayDisplayOptions', JSON.stringify(newOptions));
+    window.api.sendTrayDisplayOptionUpdate(newOptions);
+    updateTrayPreview(newOptions);
+    return true;
+  };
+
+  // Add change listeners
+  [tokensCheckbox, percentageCheckbox, endTimeCheckbox].forEach((checkbox) => {
+    if (checkbox) {
+      checkbox.addEventListener('change', () => {
+        const isValid = updateOptions();
+        if (!isValid) {
+          // Revert the change if validation fails
+          checkbox.checked = true;
+          updateOptions();
+        }
+      });
+    }
+  });
+
+  // Initialize preview with saved options
+  updateTrayPreview(trayOptions);
+
+  // Send saved options to main process
+  window.api.sendTrayDisplayOptionUpdate(trayOptions);
 });

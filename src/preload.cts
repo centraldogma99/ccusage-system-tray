@@ -1,12 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { UsageUpdateData } from './types.js';
+import type { TrayDisplayOptions } from './types.js';
 
 contextBridge.exposeInMainWorld('api', {
-  onUsageUpdate: (callback: (data: UsageUpdateData) => void) => {
-    ipcRenderer.on('usage-update', (_event, data) => callback(data));
-  },
   sendMaxTokensUpdate: (maxTokens: number) => {
     ipcRenderer.send('max-tokens-update', maxTokens);
+  },
+  sendTrayDisplayOptionUpdate: (options: TrayDisplayOptions) => {
+    ipcRenderer.send('tray-display-option-update', options);
   },
   removeAllListeners: (channel: string) => {
     ipcRenderer.removeAllListeners(channel);

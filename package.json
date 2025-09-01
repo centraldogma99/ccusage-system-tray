@@ -10,7 +10,7 @@
     "start": "npm run compile && electron .",
     "dev": "npm run compile && electron . --dev",
     "watch": "tsc -w",
-    "build": "npm run compile && electron-builder",
+    "build": "npm run clean && npm run compile && electron-builder",
     "pack": "npm run compile && electron-builder --dir",
     "clean": "rm -rf dist",
     "format": "prettier --write \"src/**/*.{ts,js,html,css,json}\"",
