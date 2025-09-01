@@ -138,16 +138,16 @@ body {
   border-color: #c9d1d9;
 }
 
-.radio-label input[type="radio"] {
+.radio-label input[type='radio'] {
   margin-right: 10px;
   cursor: pointer;
 }
 
-.radio-label input[type="radio"]:checked {
+.radio-label input[type='radio']:checked {
   accent-color: #3498db;
 }
 
-.radio-label input[type="radio"]:checked + span {
+.radio-label input[type='radio']:checked + span {
   font-weight: 500;
   color: #2c3e50;
 }
