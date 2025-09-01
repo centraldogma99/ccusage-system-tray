@@ -5,22 +5,15 @@ import './global.js';
 const updateDisplay = (data: UsageUpdateData): void => {
   if (!data) return;
 
-  const currentBlock = data.currentBlock ?? {
-    tokenCounts: {
-      inputTokens: 0,
-      outputTokens: 0,
-    },
-    startTime: 'N/A',
-    endTime: 'N/A',
-  };
+  const activeBlock = data.activeBlock;
   const blockUsageEl = document.getElementById('block-usage');
   const blockProgressEl = document.getElementById('block-progress') as HTMLElement;
   const blockLabelEl = document.getElementById('block-label');
   const tokenDetailsEl = document.getElementById('token-details');
 
   const usage = calculateTokenUsage(
-    currentBlock.tokenCounts.inputTokens,
-    currentBlock.tokenCounts.outputTokens,
+    activeBlock?.tokenCounts.inputTokens || 0,
+    activeBlock?.tokenCounts.outputTokens || 0,
     data.maxTokenLimit || DEFAULT_MAX_TOKEN_LIMIT
   );
 
@@ -28,15 +21,23 @@ const updateDisplay = (data: UsageUpdateData): void => {
   if (blockProgressEl) blockProgressEl.style.width = `${usage.percentage}%`;
 
   // Display token details
-  if (tokenDetailsEl && currentBlock.tokenCounts) {
-    const inputTokens = currentBlock.tokenCounts.inputTokens || 0;
-    const outputTokens = currentBlock.tokenCounts.outputTokens || 0;
+  if (tokenDetailsEl && activeBlock?.tokenCounts) {
+    const inputTokens = activeBlock.tokenCounts.inputTokens || 0;
+    const outputTokens = activeBlock.tokenCounts.outputTokens || 0;
     const totalTokens = inputTokens + outputTokens;
     tokenDetailsEl.textContent = `Input: ${inputTokens.toLocaleString()} | Output: ${outputTokens.toLocaleString()} | Total: ${totalTokens.toLocaleString()}`;
   }
 
-  const startTime = new Date(currentBlock.startTime);
-  const endTime = new Date(currentBlock.endTime);
+  if (!activeBlock) {
+    if (blockLabelEl) blockLabelEl.textContent = 'No active block';
+    if (document.getElementById('block-time')) {
+      document.getElementById('block-time')!.textContent = 'N/A';
+    }
+    return;
+  }
+
+  const startTime = activeBlock.startTime;
+  const endTime = activeBlock.endTime;
   const now = new Date();
   const remaining = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 60000));
 

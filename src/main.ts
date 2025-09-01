@@ -1,9 +1,8 @@
 import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, IpcMainEvent } from 'electron';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { exec } from 'child_process';
-import { getBunEnvironment, getCcusageCommand } from './utils.js';
-import { BlockData, UsageUpdateData } from './types.js';
+import { getActiveBlock } from './get_active_block.js';
+import { UsageUpdateData } from './types.js';
 import { DEFAULT_MAX_TOKEN_LIMIT, UPDATE_INTERVAL } from './constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -13,41 +12,6 @@ let tray: Tray | null = null;
 let window: BrowserWindow | null = null;
 let maxTokenLimit: number = DEFAULT_MAX_TOKEN_LIMIT;
 
-const executeCcusageCommand = (subCommand: string, env: NodeJS.ProcessEnv): Promise<any> => {
-  return new Promise((resolve, reject) => {
-    const fullCommand = getCcusageCommand(subCommand);
-
-    exec(
-      fullCommand,
-      {
-        env,
-        maxBuffer: 10 * 1024 * 1024,
-        encoding: 'utf8',
-      },
-      (error, stdout, stderr) => {
-        if (error) {
-          console.error(`ccusage ${subCommand.split(' ')[0]} error:`, error.message);
-          console.error('stderr:', stderr);
-          reject(new Error(`ccusage ${subCommand.split(' ')[0]} failed: ${error.message}`));
-        } else {
-          try {
-            const jsonData = JSON.parse(stdout);
-            resolve(jsonData);
-          } catch (e) {
-            const parseError = e as Error;
-            console.error(`JSON parse error for ${subCommand}:`, parseError.message);
-            console.error('stdout length:', stdout.length);
-            console.error('stdout first 200 chars:', stdout.slice(0, 200));
-            console.error('stdout last 200 chars:', stdout.slice(-200));
-            reject(
-              new Error(`Failed to parse ${subCommand.split(' ')[0]} data: ${parseError.message}`)
-            );
-          }
-        }
-      }
-    );
-  });
-};
 
 const createTray = (): void => {
   const iconPath = path.join(__dirname, 'assets', 'icon@2x.png');
@@ -144,25 +108,31 @@ const getTrayText = (usage: { tokensUsed: number; tokenLimit: number }): string 
 };
 
 const updateUsageData = async (): Promise<void> => {
-  const env = getBunEnvironment();
   try {
-    const blockData = (await executeCcusageCommand(
-      `blocks -t ${maxTokenLimit} --active --json`,
-      env
-    )) as BlockData;
+    const activeBlock = await getActiveBlock();
 
-    const currentBlock = blockData.blocks.length === 0 ? undefined : blockData.blocks[0];
+    if (!activeBlock) {
+      updateTrayTitle('No data');
+      const updateData: UsageUpdateData = {
+        activeBlock: undefined,
+        error: undefined,
+        maxTokenLimit,
+      };
+      window?.webContents.send('usage-update', updateData);
+      return;
+    }
+
+    const tokensUsed = activeBlock.tokenCounts.inputTokens + activeBlock.tokenCounts.outputTokens;
+
     updateTrayTitle(
       getTrayText({
-        tokensUsed: currentBlock
-          ? currentBlock.tokenCounts.inputTokens + currentBlock.tokenCounts.outputTokens
-          : 0,
+        tokensUsed,
         tokenLimit: maxTokenLimit,
       })
     );
 
     const updateData: UsageUpdateData = {
-      currentBlock,
+      activeBlock,
       error: undefined,
       maxTokenLimit,
     };
@@ -175,9 +145,8 @@ const updateUsageData = async (): Promise<void> => {
     const errorMessage = error.message || error.toString();
     let helpMessage = errorMessage;
 
-    const CCUSAGE_BUN_ERROR_KEYWORDS = ['ccusage', 'command not found', 'ENOENT', 'bunx'];
-    if (CCUSAGE_BUN_ERROR_KEYWORDS.some(errorMessage.includes)) {
-      helpMessage = `ccusage 실행 중 오류가 발생했습니다.\n\nbun이 설치되어 있는지 확인하세요:\n1. Terminal을 열고 다음 명령어를 실행하세요:\n   bun --version\n\n2. bun이 없다면 설치하세요:\n   curl -fsSL https://bun.sh/install | bash\n\n에러 상세: ${errorMessage}`;
+    if (errorMessage.includes('No valid Claude data directories found')) {
+      helpMessage = `Claude 데이터 디렉토리를 찾을 수 없습니다.\n\nClaude Code가 설치되어 있고 최소 한 번 이상 실행되었는지 확인하세요.\n\n에러 상세: ${errorMessage}`;
     }
 
     window.webContents.send('usage-update', {
